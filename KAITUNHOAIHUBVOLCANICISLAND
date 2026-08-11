@@ -25,7 +25,7 @@ local CFG = {
 	ShortName = "Kaitun HoaiHub",
 	Subtitle = "KAITUN ACCOUNT DASHBOARD",
 
-	Logo = "rbxassetid://82441709747144",
+	Logo = "rbxassetid://125017613713306",
 
 	WindowWidth = 650,
 	WindowHeight = 405,
