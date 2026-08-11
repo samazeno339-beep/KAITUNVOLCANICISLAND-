@@ -807,3 +807,224 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 print("Kaitun HoaiHub volcanic island UI loaded.")
+--========================================================--
+-- BLOX FRUITS - KAITUN PROGRESS CHECKER
+-- Check:
+--   1. Dragon Talon
+--   2. Complete Dojo = đủ 8 đai
+--   3. Dragon Storm
+--   4. Dragon Heart
+--========================================================--
+
+local DOJO_BELTS = {
+	"White Belt",
+	"Yellow Belt",
+	"Orange Belt",
+	"Green Belt",
+	"Blue Belt",
+	"Purple Belt",
+	"Red Belt",
+	"Black Belt",
+}
+
+local function NormalizeName(value)
+	value = tostring(value or ""):lower()
+	value = value:gsub("[%-%_]", " ")
+	value = value:gsub("%s+", " ")
+	value = value:gsub("^%s+", "")
+	value = value:gsub("%s+$", "")
+	return value
+end
+
+--========================================================--
+-- CHECK ITEM ĐÃ SỞ HỮU
+--========================================================--
+
+local function HasOwnedItem(itemName)
+	local target = NormalizeName(itemName)
+
+	local containers = {
+		Player,
+		Player.Character,
+		Player:FindFirstChildOfClass("Backpack"),
+	}
+
+	for _, container in ipairs(containers) do
+		if container then
+			for _, obj in ipairs(container:GetDescendants()) do
+				local objName = NormalizeName(obj.Name)
+
+				if objName == target
+					or objName:find(target, 1, true) then
+					return true
+				end
+			end
+		end
+	end
+
+	-- Kiểm tra Player Attributes
+	for attrName, attrValue in pairs(Player:GetAttributes()) do
+		local name = NormalizeName(attrName)
+
+		if name == target
+			or name:find(target, 1, true) then
+
+			if attrValue == true
+				or attrValue == 1
+				or tostring(attrValue):lower() == "true" then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+--========================================================--
+-- CHECK TỪNG ĐAI DOJO
+--========================================================--
+
+local function HasDojoBelt(beltName)
+	local target = NormalizeName(beltName)
+
+	local containers = {
+		Player,
+		Player.Character,
+		Player:FindFirstChildOfClass("Backpack"),
+	}
+
+	for _, container in ipairs(containers) do
+		if container then
+			for _, obj in ipairs(container:GetDescendants()) do
+
+				local objName = NormalizeName(obj.Name)
+
+				if objName == target
+					or objName:find(target, 1, true) then
+					return true
+				end
+
+				-- Attribute dạng string
+				for _, attrValue in pairs(obj:GetAttributes()) do
+					if typeof(attrValue) == "string" then
+						local value = NormalizeName(attrValue)
+
+						if value == target
+							or value:find(target, 1, true) then
+							return true
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return false
+end
+
+--========================================================--
+-- CHECK FULL DOJO
+--========================================================--
+
+local function CheckCompleteDojo()
+	local completed = 0
+	local states = {}
+
+	for _, belt in ipairs(DOJO_BELTS) do
+		local owned = HasDojoBelt(belt)
+
+		states[belt] = owned
+
+		if owned then
+			completed += 1
+		end
+	end
+
+	-- Chỉ COMPLETE khi đủ 8/8
+	local full = completed == #DOJO_BELTS
+
+	return full, completed, states
+end
+
+--========================================================--
+-- CHECK TOÀN BỘ
+--========================================================--
+
+local function CheckKaitunProgress()
+	-- Dragon Talon
+	local dragonTalon = HasOwnedItem("Dragon Talon")
+
+	-- Complete Dojo
+	local completeDojo, dojoCount, dojoStates = CheckCompleteDojo()
+
+	-- Dragon Storm
+	local dragonStorm = HasOwnedItem("Dragon Storm")
+
+	-- Dragon Heart
+	local dragonHeart = HasOwnedItem("Dragon Heart")
+
+	--====================================================--
+	-- UI
+	--====================================================--
+
+	SetProgress("Dragon Talon", dragonTalon)
+	SetProgress("Complete Dojo", completeDojo)
+	SetProgress("Dragon Storm", dragonStorm)
+	SetProgress("Dragon Heart", dragonHeart)
+
+	--====================================================--
+	-- STATUS
+	--====================================================--
+
+	local totalComplete = 0
+
+	if dragonTalon then
+		totalComplete += 1
+	end
+
+	if completeDojo then
+		totalComplete += 1
+	end
+
+	if dragonStorm then
+		totalComplete += 1
+	end
+
+	if dragonHeart then
+		totalComplete += 1
+	end
+
+	if totalComplete == 4 then
+		SetStatus("All objectives completed ✓")
+	else
+		SetStatus(
+			"Progress "
+			.. totalComplete
+			.. "/4 • Dojo "
+			.. dojoCount
+			.. "/8"
+		)
+	end
+
+	return {
+		DragonTalon = dragonTalon,
+		CompleteDojo = completeDojo,
+		DojoCount = dojoCount,
+		DojoStates = dojoStates,
+		DragonStorm = dragonStorm,
+		DragonHeart = dragonHeart,
+	}
+end
+
+--========================================================--
+-- AUTO CHECK MỖI 2 GIÂY
+--========================================================--
+
+task.spawn(function()
+	while task.wait(2) do
+		pcall(CheckKaitunProgress)
+	end
+end)
+
+-- Cho phép chỗ khác gọi thủ công:
+-- local data = CheckKaitunProgress()
