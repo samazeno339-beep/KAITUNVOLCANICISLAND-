@@ -1,962 +1,957 @@
---========================================================--
--- KaitunHoaiHub volcanic island - PRO CHECKER
--- UI + live checker / cache / safe data handling
--- Images: rbxassetid://111921165456492
---
--- DOES NOT:
---   * teleport
---   * auto-farm
---   * auto-interact with NPCs
---
--- CHECKER:
---   * runs immediately on startup
---   * refreshes every 1 second
---   * updates UI only when values change
---   * prefers client-visible data
---   * safely attempts optional RemoteFunction reads
---   * never turns missing data into a false "owned" result
---========================================================--
+-- Kaitun HoaiHub volcanic island - CHECKER ONLY
+-- UI Purple/Pink | Images: 111921165456492
+-- Không tự teleport / farm / điều khiển nhân vật
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ContentProvider = game:GetService("ContentProvider")
 
 local Player = Players.LocalPlayer
-if not Player then
-    warn("KaitunHoaiHub: LocalPlayer not found.")
-    return
-end
-
+if not Player then return end
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
---========================================================--
--- CONFIG
---========================================================--
-
 local CFG = {
-    Name = "KaitunHoaiHub volcanic island",
-    ShortName = "KaitunHoaiHub",
+    Name = "Kaitun HoaiHub volcanic island",
+    ShortName = "Kaitun HoaiHub",
     Subtitle = "KAITUN ACCOUNT DASHBOARD",
     Images = "rbxassetid://111921165456492",
 
     WindowWidth = 650,
     WindowHeight = 405,
-    CheckInterval = 1,
 
-    Accent = Color3.fromRGB(196, 132, 252),
-    AccentLight = Color3.fromRGB(235, 184, 255),
-    Background = Color3.fromRGB(11, 9, 17),
-    Card = Color3.fromRGB(27, 21, 39),
-    Card2 = Color3.fromRGB(32, 24, 46),
-    Text = Color3.fromRGB(247, 242, 252),
-    SubText = Color3.fromRGB(171, 160, 184),
-    Success = Color3.fromRGB(100, 235, 140),
-    Danger = Color3.fromRGB(255, 95, 115),
-    Muted = Color3.fromRGB(103, 94, 114),
-
-    Corner = 14,
+    Accent = Color3.fromRGB(196,132,252),
+    AccentLight = Color3.fromRGB(235,184,255),
+    Background = Color3.fromRGB(11,9,17),
+    Card = Color3.fromRGB(27,21,39),
+    Card2 = Color3.fromRGB(32,24,46),
+    Text = Color3.fromRGB(247,242,252),
+    SubText = Color3.fromRGB(171,160,184),
+    Success = Color3.fromRGB(100,235,140),
+    Danger = Color3.fromRGB(255,95,115),
+    Muted = Color3.fromRGB(103,94,114),
 }
-
-local DOJO_BELTS = {
-    "White Belt", "Yellow Belt", "Orange Belt", "Green Belt",
-    "Blue Belt", "Purple Belt", "Red Belt", "Black Belt",
-}
-
-local OBJECTIVES = {
-    "Dragon Talon",
-    "Dojo Belt",
-    "Dragon Storm",
-    "Dragon Heart",
-}
-
---========================================================--
--- CLEAN OLD UI
---========================================================--
 
 local old = PlayerGui:FindFirstChild("HoaiHub_Kaitun_UI")
-if old then
-    old:Destroy()
-end
-
---========================================================--
--- HELPERS
---========================================================--
+if old then old:Destroy() end
 
 local function New(className, props)
-    local obj = Instance.new(className)
-    for key, value in pairs(props or {}) do
-        obj[key] = value
-    end
-    return obj
+    local o = Instance.new(className)
+    for k,v in pairs(props or {}) do o[k] = v end
+    return o
 end
 
-local function Corner(parent, radius)
+local function Corner(p, r)
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, radius or CFG.Corner)
-    c.Parent = parent
-    return c
+    c.CornerRadius = UDim.new(0,r or 14)
+    c.Parent = p
 end
 
-local function Stroke(parent, color, thickness, transparency)
+local function Stroke(p, color, thickness, transparency)
     local s = Instance.new("UIStroke")
     s.Color = color
     s.Thickness = thickness or 1
     s.Transparency = transparency or 0
-    s.Parent = parent
-    return s
+    s.Parent = p
 end
-
-local function ClickInput(input)
-    return input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch
-end
-
-local function Normalize(value)
-    value = tostring(value or ""):lower()
-    value = value:gsub("[%-_]", " ")
-    value = value:gsub("%s+", " ")
-    value = value:gsub("^%s+", "")
-    value = value:gsub("%s+$", "")
-    return value
-end
-
-local function ToNumber(value)
-    if type(value) == "number" then
-        return value
-    end
-    if type(value) == "string" then
-        return tonumber(value)
-    end
-    return nil
-end
-
-local function ToBoolean(value)
-    if value == true or value == false then
-        return value
-    end
-    if type(value) == "number" then
-        if value == 1 then return true end
-        if value == 0 then return false end
-    end
-    if type(value) == "string" then
-        local v = Normalize(value)
-        if v == "true" or v == "owned" or v == "unlocked" or v == "complete" then
-            return true
-        end
-        if v == "false" or v == "locked" or v == "incomplete" then
-            return false
-        end
-    end
-    return nil
-end
-
---========================================================--
--- UI ROOT
---========================================================--
 
 local ScreenGui = New("ScreenGui", {
-    Name = "HoaiHub_Kaitun_UI",
-    Parent = PlayerGui,
-    ResetOnSpawn = false,
-    IgnoreGuiInset = true,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-    DisplayOrder = 999999,
+    Name="HoaiHub_Kaitun_UI", Parent=PlayerGui,
+    ResetOnSpawn=false, IgnoreGuiInset=true,
+    ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
+    DisplayOrder=999999
 })
 
 local Main = New("Frame", {
-    Name = "Main",
-    Parent = ScreenGui,
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    Size = UDim2.fromOffset(CFG.WindowWidth, CFG.WindowHeight),
-    BackgroundColor3 = CFG.Background,
-    BorderSizePixel = 0,
-    Active = true,
+    Parent=ScreenGui, AnchorPoint=Vector2.new(.5,.5),
+    Position=UDim2.new(.5,0,.5,0),
+    Size=UDim2.fromOffset(CFG.WindowWidth,CFG.WindowHeight),
+    BackgroundColor3=CFG.Background, BorderSizePixel=0, Active=true
 })
-Corner(Main, 16)
-Stroke(Main, CFG.Accent, 1.5, 0.25)
+Corner(Main,16); Stroke(Main,CFG.Accent,1.5,.25)
 
 local Header = New("Frame", {
-    Name = "Header",
-    Parent = Main,
-    Size = UDim2.new(1, 0, 0, 72),
-    BackgroundTransparency = 1,
-    Active = true,
+    Parent=Main, Size=UDim2.new(1,0,0,72),
+    BackgroundTransparency=1, Active=true
 })
 
-local Images = New("ImageButton", {
-    Name = "Images",
-    Parent = Header,
-    Position = UDim2.fromOffset(14, 11),
-    Size = UDim2.fromOffset(50, 50),
-    BackgroundColor3 = CFG.Card2,
-    BorderSizePixel = 0,
-    Image = CFG.Images,
-    ImageColor3 = Color3.fromRGB(255, 255, 255),
-    ScaleType = Enum.ScaleType.Fit,
-    AutoButtonColor = false,
+local Logo = New("ImageButton", {
+    Parent=Header, Position=UDim2.fromOffset(14,11),
+    Size=UDim2.fromOffset(50,50), BackgroundColor3=CFG.Card2,
+    BorderSizePixel=0, Image=CFG.Logo,
+    ScaleType=Enum.ScaleType.Fit, AutoButtonColor=false
 })
-Corner(Images, 12)
-Stroke(Images, CFG.AccentLight, 1.2, 0.2)
+Corner(Logo,12); Stroke(Logo,CFG.AccentLight,1.2,.2)
 
 New("TextLabel", {
-    Parent = Header,
-    Position = UDim2.fromOffset(76, 10),
-    Size = UDim2.new(1, -150, 0, 27),
-    BackgroundTransparency = 1,
-    Text = CFG.Name,
-    TextColor3 = CFG.Text,
-    Font = Enum.Font.GothamBold,
-    TextSize = 18,
-    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent=Header, Position=UDim2.fromOffset(76,10),
+    Size=UDim2.new(1,-150,0,27), BackgroundTransparency=1,
+    Text=CFG.Name, TextColor3=CFG.Text,
+    Font=Enum.Font.GothamBold, TextSize=18,
+    TextXAlignment=Enum.TextXAlignment.Left
 })
 
 New("TextLabel", {
-    Parent = Header,
-    Position = UDim2.fromOffset(76, 38),
-    Size = UDim2.new(1, -150, 0, 17),
-    BackgroundTransparency = 1,
-    Text = CFG.Subtitle,
-    TextColor3 = CFG.AccentLight,
-    Font = Enum.Font.GothamMedium,
-    TextSize = 9,
-    TextXAlignment = Enum.TextXAlignment.Left,
+    Parent=Header, Position=UDim2.fromOffset(76,38),
+    Size=UDim2.new(1,-150,0,17), BackgroundTransparency=1,
+    Text=CFG.Subtitle, TextColor3=CFG.AccentLight,
+    Font=Enum.Font.GothamMedium, TextSize=9,
+    TextXAlignment=Enum.TextXAlignment.Left
 })
 
 local Minimize = New("TextButton", {
-    Parent = Header,
-    AnchorPoint = Vector2.new(1, 0.5),
-    Position = UDim2.new(1, -46, 0.5, 0),
-    Size = UDim2.fromOffset(32, 30),
-    BackgroundColor3 = CFG.Card,
-    BorderSizePixel = 0,
-    Text = "—",
-    TextColor3 = CFG.Text,
-    Font = Enum.Font.GothamBold,
-    TextSize = 18,
-    AutoButtonColor = false,
+    Parent=Header, AnchorPoint=Vector2.new(1,.5),
+    Position=UDim2.new(1,-46,.5,0), Size=UDim2.fromOffset(32,30),
+    BackgroundColor3=CFG.Card, BorderSizePixel=0,
+    Text="—", TextColor3=CFG.Text,
+    Font=Enum.Font.GothamBold, TextSize=18, AutoButtonColor=false
 })
-Corner(Minimize, 9)
+Corner(Minimize,9)
 
 local Close = New("TextButton", {
-    Parent = Header,
-    AnchorPoint = Vector2.new(1, 0.5),
-    Position = UDim2.new(1, -10, 0.5, 0),
-    Size = UDim2.fromOffset(28, 28),
-    BackgroundColor3 = CFG.Card,
-    BorderSizePixel = 0,
-    Text = "×",
-    TextColor3 = CFG.Text,
-    Font = Enum.Font.GothamBold,
-    TextSize = 18,
-    AutoButtonColor = false,
+    Parent=Header, AnchorPoint=Vector2.new(1,.5),
+    Position=UDim2.new(1,-10,.5,0), Size=UDim2.fromOffset(28,28),
+    BackgroundColor3=CFG.Card, BorderSizePixel=0,
+    Text="×", TextColor3=CFG.Text,
+    Font=Enum.Font.GothamBold, TextSize=18, AutoButtonColor=false
 })
-Corner(Close, 9)
+Corner(Close,9)
 
 local Body = New("Frame", {
-    Name = "Body",
-    Parent = Main,
-    Position = UDim2.fromOffset(12, 78),
-    Size = UDim2.new(1, -24, 1, -90),
-    BackgroundTransparency = 1,
+    Parent=Main, Position=UDim2.fromOffset(12,78),
+    Size=UDim2.new(1,-24,1,-90), BackgroundTransparency=1
 })
+
+local StatsCard = New("Frame", {
+    Parent=Body, Size=UDim2.new(.49,-6,0,132),
+    BackgroundColor3=CFG.Card, BorderSizePixel=0
+})
+Corner(StatsCard,12); Stroke(StatsCard,CFG.Accent,1,.82)
+
+New("TextLabel", {
+    Parent=StatsCard, Position=UDim2.fromOffset(14,11),
+    Size=UDim2.new(1,-28,0,20), BackgroundTransparency=1,
+    Text="ACCOUNT STATUS", TextColor3=CFG.AccentLight,
+    Font=Enum.Font.GothamBold, TextSize=12,
+    TextXAlignment=Enum.TextXAlignment.Left
+})
+
+local StatsText = New("TextLabel", {
+    Parent=StatsCard, Position=UDim2.fromOffset(14,38),
+    Size=UDim2.new(1,-28,1,-48), BackgroundTransparency=1,
+    Text="Name: Reading...\nLevel: Reading...\nBeli: Reading...\nFragments: Reading...",
+    TextColor3=CFG.Text, Font=Enum.Font.Gotham, TextSize=11,
+    TextXAlignment=Enum.TextXAlignment.Left,
+    TextYAlignment=Enum.TextYAlignment.Top
+})
+
+local WeaponsCard = New("Frame", {
+    Parent=Body, Position=UDim2.new(.51,6,0,0),
+    Size=UDim2.new(.49,-6,0,132),
+    BackgroundColor3=CFG.Card, BorderSizePixel=0
+})
+Corner(WeaponsCard,12); Stroke(WeaponsCard,CFG.Accent,1,.82)
+
+New("TextLabel", {
+    Parent=WeaponsCard, Position=UDim2.fromOffset(14,11),
+    Size=UDim2.new(1,-28,0,20), BackgroundTransparency=1,
+    Text="ITEM ACCOUNT", TextColor3=CFG.AccentLight,
+    Font=Enum.Font.GothamBold, TextSize=12,
+    TextXAlignment=Enum.TextXAlignment.Left
+})
+
+local WeaponsText = New("TextLabel", {
+    Parent=WeaponsCard, Position=UDim2.fromOffset(14,39),
+    Size=UDim2.new(1,-28,1,-50), BackgroundTransparency=1,
+    Text="Reading items...", TextColor3=CFG.Text,
+    Font=Enum.Font.Gotham, TextSize=10,
+    TextXAlignment=Enum.TextXAlignment.Left,
+    TextYAlignment=Enum.TextYAlignment.Top
+})
+
+local ProgressCard = New("Frame", {
+    Parent=Body, Position=UDim2.fromOffset(0,145),
+    Size=UDim2.new(1,0,0,144),
+    BackgroundColor3=CFG.Card, BorderSizePixel=0
+})
+Corner(ProgressCard,12); Stroke(ProgressCard,CFG.Accent,1,.82)
+
+New("TextLabel", {
+    Parent=ProgressCard, Position=UDim2.fromOffset(14,10),
+    Size=UDim2.new(1,-28,0,20), BackgroundTransparency=1,
+    Text="ACCOUNT PROGRESS", TextColor3=CFG.AccentLight,
+    Font=Enum.Font.GothamBold, TextSize=12,
+    TextXAlignment=Enum.TextXAlignment.Left
+})
+
+local Rows = {}
+
+local function MakeRow(name,index,detail)
+    local row = New("Frame", {
+        Parent=ProgressCard,
+        Position=UDim2.new((index-1)*.25+.01,index>1 and 3 or 0,0,39),
+        Size=UDim2.new(.25,-7,0,82),
+        BackgroundColor3=CFG.Card2, BorderSizePixel=0
+    })
+    Corner(row,10)
+
+    local bar=New("Frame",{
+        Parent=row, Position=UDim2.fromOffset(0,0),
+        Size=UDim2.fromOffset(3,82),
+        BackgroundColor3=CFG.Danger, BorderSizePixel=0
+    })
+    Corner(bar,3)
+
+    New("TextLabel",{
+        Parent=row, Position=UDim2.fromOffset(10,8),
+        Size=UDim2.new(1,-20,0,22), BackgroundTransparency=1,
+        Text=name, TextColor3=CFG.Text,
+        Font=Enum.Font.GothamBold, TextSize=10,
+        TextXAlignment=Enum.TextXAlignment.Left
+    })
+
+    local status=New("TextLabel",{
+        Parent=row, Position=UDim2.fromOffset(10,32),
+        Size=UDim2.new(1,-20,0,20), BackgroundTransparency=1,
+        Text="● NOT READ", TextColor3=CFG.Muted,
+        Font=Enum.Font.GothamBold, TextSize=9,
+        TextXAlignment=Enum.TextXAlignment.Left
+    })
+
+    local extra=New("TextLabel",{
+        Parent=row, Position=UDim2.fromOffset(10,53),
+        Size=UDim2.new(1,-20,0,20), BackgroundTransparency=1,
+        Text=detail or "", TextColor3=CFG.SubText,
+        Font=Enum.Font.GothamMedium, TextSize=9,
+        TextXAlignment=Enum.TextXAlignment.Left
+    })
+
+    Rows[name]={Bar=bar,Status=status,Extra=extra}
+end
+
+MakeRow("Dragon Talon",1,"Mastery: --/500")
+MakeRow("Dojo Belt",2,"--/8")
+MakeRow("Dragon Storm",3,"--")
+MakeRow("Dragon Heart",4,"--")
+
+local BottomInfo = New("TextLabel", {
+    Parent=Body, Position=UDim2.fromOffset(0,300),
+    Size=UDim2.new(1,0,0,24), BackgroundTransparency=1,
+    Text="Ping: --    FPS: --    Players: --",
+    TextColor3=CFG.SubText, Font=Enum.Font.GothamMedium,
+    TextSize=10, TextXAlignment=Enum.TextXAlignment.Center
+})
+
+local StatusBar = New("Frame", {
+    Parent=ScreenGui, AnchorPoint=Vector2.new(.5,0),
+    Position=UDim2.new(.5,0,0,26),
+    Size=UDim2.fromOffset(500,78),
+    BackgroundColor3=CFG.Background, BorderSizePixel=0,
+    Visible=false, Active=true
+})
+Corner(StatusBar,14); Stroke(StatusBar,CFG.Accent,1.5,.12)
+
+local StatusLogo=New("ImageButton",{
+    Parent=StatusBar, Position=UDim2.fromOffset(11,11),
+    Size=UDim2.fromOffset(54,54), BackgroundColor3=CFG.Card,
+    BorderSizePixel=0, Image=CFG.Logo,
+    ScaleType=Enum.ScaleType.Fit, AutoButtonColor=false
+})
+Corner(StatusLogo,11)
+
+New("TextLabel",{
+    Parent=StatusBar, Position=UDim2.fromOffset(78,10),
+    Size=UDim2.new(1,-90,0,18), BackgroundTransparency=1,
+    Text=CFG.ShortName.." / KAITUN", TextColor3=CFG.AccentLight,
+    Font=Enum.Font.GothamBold, TextSize=11,
+    TextXAlignment=Enum.TextXAlignment.Left
+})
+
+local StatusText=New("TextLabel",{
+    Parent=StatusBar, Position=UDim2.fromOffset(78,31),
+    Size=UDim2.new(1,-90,0,30), BackgroundTransparency=1,
+    Text="Status : Checking...", TextColor3=CFG.Text,
+    Font=Enum.Font.GothamMedium, TextSize=11,
+    TextWrapped=true, TextXAlignment=Enum.TextXAlignment.Left
+})
+
+local Floating=New("ImageButton",{
+    Parent=ScreenGui, AnchorPoint=Vector2.new(0,.5),
+    Position=UDim2.new(0,18,.5,0), Size=UDim2.fromOffset(58,58),
+    BackgroundColor3=CFG.Card, BorderSizePixel=0,
+    Image=CFG.Logo, ScaleType=Enum.ScaleType.Fit,
+    AutoButtonColor=false, Visible=false, Active=true, ZIndex=50
+})
+Corner(Floating,14); Stroke(Floating,CFG.AccentLight,2,.08)
+
+local function SetOpen(state)
+    Main.Visible=state
+    StatusBar.Visible=not state
+    Floating.Visible=not state
+end
+
+Minimize.MouseButton1Click:Connect(function() SetOpen(false) end)
+Close.MouseButton1Click:Connect(function() SetOpen(false) end)
+Logo.MouseButton1Click:Connect(function() SetOpen(false) end)
+StatusLogo.MouseButton1Click:Connect(function() SetOpen(true) end)
+Floating.MouseButton1Click:Connect(function() SetOpen(true) end)
+
+-- Drag
+local dragging=false
+local dragStart
+local startPos
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.MouseButton1
+    or input.UserInputType==Enum.UserInputType.Touch then
+        dragging=true
+        dragStart=input.Position
+        startPos=Main.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not dragging then return end
+    if input.UserInputType~=Enum.UserInputType.MouseMovement
+    and input.UserInputType~=Enum.UserInputType.Touch then return end
+    local d=input.Position-dragStart
+    Main.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+d.X,startPos.Y.Scale,startPos.Y.Offset+d.Y)
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.MouseButton1
+    or input.UserInputType==Enum.UserInputType.Touch then
+        dragging=false
+    end
+end)
+
+
+--========================================================--
+-- KAITUN HOAIHUB - COMBINED CHECKER + AUTO FLY
+-- Check interval: 0.5 second
+--
+-- UI:
+--   * Existing dashboard preserved
+--   * Images = 111921165456492
+--
+-- Checker:
+--   * Immediate first check
+--   * Refresh every 0.5 second
+--   * Account Status: Name / Level / Beli / Fragments
+--   * Account Inventory: account-level data only
+--   * Dragon Talon: state + Mastery
+--   * Dojo Belt: progress / 8
+--   * Dragon Storm / Dragon Heart
+--
+-- AutoFly:
+--   * Finds UZOTH
+--   * Flies to target (not direct teleport)
+--   * Speed 30
+--   * Stops at MaxActivationDistance - 1
+--   * Client no-clip while flying
+--   * Restores collision after stopping
+--
+-- This combined file is intended for a game you control in
+-- Roblox Studio. It does not claim unsupported server APIs
+-- are guaranteed to exist.
+--========================================================--
+
+local CHECK_INTERVAL = 0.5
+
+--========================================================--
+-- SMALL UI HELPERS
+--========================================================--
+
+local function SetProgress(name, state, extra)
+    local row = ProgressRows and ProgressRows[name]
+    if not row then
+        return
+    end
+
+    row.Extra = row.Extra or row.Detail
+
+    if state == true then
+        row.Status.Text = "●  COMPLETE"
+        row.Status.TextColor3 = CFG.Success
+        row.Bar.BackgroundColor3 = CFG.Success
+
+    elseif state == false then
+        row.Status.Text = "●  INCOMPLETE"
+        row.Status.TextColor3 = CFG.Danger
+        row.Bar.BackgroundColor3 = CFG.Danger
+
+    else
+        row.Status.Text = "●  NOT READ"
+        row.Status.TextColor3 = CFG.Muted
+        row.Bar.BackgroundColor3 = CFG.Muted
+    end
+
+    if row.Extra then
+        row.Extra.Text = extra or ""
+    end
+end
+
+local function SetStatus(text)
+    if StatusText then
+        StatusText.Text = "Status : " .. tostring(text)
+    end
+end
+
+--========================================================--
+-- SAFE REMOTE HELPERS
+--========================================================--
+
+local function FindCommF()
+    local rep = game:GetService("ReplicatedStorage")
+    local remotes = rep:FindFirstChild("Remotes")
+    local comm = remotes and remotes:FindFirstChild("CommF_")
+
+    if comm and comm:IsA("RemoteFunction") then
+        return comm
+    end
+
+    return nil
+end
+
+local function SafeInvoke(comm, command)
+    if not comm then
+        return nil
+    end
+
+    local ok, result = pcall(function()
+        return comm:InvokeServer(command)
+    end)
+
+    if ok then
+        return result
+    end
+
+    return nil
+end
+
+local function ReadNumber(tbl, names)
+    if type(tbl) ~= "table" then
+        return nil
+    end
+
+    for _, name in ipairs(names) do
+        local value = tbl[name]
+
+        if type(value) == "number" then
+            return value
+        end
+
+        if type(value) == "string" then
+            local number = tonumber(value)
+            if number then
+                return number
+            end
+        end
+    end
+
+    return nil
+end
 
 --========================================================--
 -- ACCOUNT STATUS
 --========================================================--
 
-local StatsCard = New("Frame", {
-    Parent = Body,
-    Size = UDim2.new(0.49, -6, 0, 132),
-    BackgroundColor3 = CFG.Card,
-    BorderSizePixel = 0,
-})
-Corner(StatsCard, 12)
-Stroke(StatsCard, CFG.Accent, 1, 0.82)
+local function ScanAccountStatus()
+    local level, beli, fragments
 
-New("TextLabel", {
-    Parent = StatsCard,
-    Position = UDim2.fromOffset(14, 11),
-    Size = UDim2.new(1, -28, 0, 20),
-    BackgroundTransparency = 1,
-    Text = "ACCOUNT STATUS",
-    TextColor3 = CFG.AccentLight,
-    Font = Enum.Font.GothamBold,
-    TextSize = 12,
-    TextXAlignment = Enum.TextXAlignment.Left,
-})
-
-local StatsText = New("TextLabel", {
-    Parent = StatsCard,
-    Position = UDim2.fromOffset(14, 38),
-    Size = UDim2.new(1, -28, 1, -48),
-    BackgroundTransparency = 1,
-    Text = "Name: Reading...\nLevel: Reading...\nBeli: Reading...\nFragments: Reading...",
-    TextColor3 = CFG.Text,
-    Font = Enum.Font.Gotham,
-    TextSize = 11,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-})
-
---========================================================--
--- ITEM ACCOUNT
---========================================================--
-
-local WeaponsCard = New("Frame", {
-    Parent = Body,
-    Position = UDim2.new(0.51, 6, 0, 0),
-    Size = UDim2.new(0.49, -6, 0, 132),
-    BackgroundColor3 = CFG.Card,
-    BorderSizePixel = 0,
-})
-Corner(WeaponsCard, 12)
-Stroke(WeaponsCard, CFG.Accent, 1, 0.82)
-
-New("TextLabel", {
-    Parent = WeaponsCard,
-    Position = UDim2.fromOffset(14, 11),
-    Size = UDim2.new(1, -28, 0, 20),
-    BackgroundTransparency = 1,
-    Text = "ITEM ACCOUNT",
-    TextColor3 = CFG.AccentLight,
-    Font = Enum.Font.GothamBold,
-    TextSize = 12,
-    TextXAlignment = Enum.TextXAlignment.Left,
-})
-
-local WeaponsText = New("TextLabel", {
-    Parent = WeaponsCard,
-    Position = UDim2.fromOffset(14, 39),
-    Size = UDim2.new(1, -28, 1, -50),
-    BackgroundTransparency = 1,
-    Text = "Reading items...",
-    TextColor3 = CFG.Text,
-    Font = Enum.Font.Gotham,
-    TextSize = 10,
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextYAlignment = Enum.TextYAlignment.Top,
-})
-
---========================================================--
--- PROGRESS
---========================================================--
-
-local ProgressCard = New("Frame", {
-    Parent = Body,
-    Position = UDim2.fromOffset(0, 145),
-    Size = UDim2.new(1, 0, 0, 144),
-    BackgroundColor3 = CFG.Card,
-    BorderSizePixel = 0,
-})
-Corner(ProgressCard, 12)
-Stroke(ProgressCard, CFG.Accent, 1, 0.82)
-
-New("TextLabel", {
-    Parent = ProgressCard,
-    Position = UDim2.fromOffset(14, 10),
-    Size = UDim2.new(1, -28, 0, 20),
-    BackgroundTransparency = 1,
-    Text = "ACCOUNT PROGRESS",
-    TextColor3 = CFG.AccentLight,
-    Font = Enum.Font.GothamBold,
-    TextSize = 12,
-    TextXAlignment = Enum.TextXAlignment.Left,
-})
-
-local Rows = {}
-
-local function MakeRow(name, index, detail)
-    local row = New("Frame", {
-        Parent = ProgressCard,
-        Position = UDim2.new((index - 1) * 0.25 + 0.01, index > 1 and 3 or 0, 0, 39),
-        Size = UDim2.new(0.25, -7, 0, 82),
-        BackgroundColor3 = CFG.Card2,
-        BorderSizePixel = 0,
-    })
-    Corner(row, 10)
-
-    local bar = New("Frame", {
-        Parent = row,
-        Position = UDim2.fromOffset(0, 0),
-        Size = UDim2.fromOffset(3, 82),
-        BackgroundColor3 = CFG.Muted,
-        BorderSizePixel = 0,
-    })
-    Corner(bar, 3)
-
-    New("TextLabel", {
-        Parent = row,
-        Position = UDim2.fromOffset(10, 8),
-        Size = UDim2.new(1, -20, 0, 22),
-        BackgroundTransparency = 1,
-        Text = name,
-        TextColor3 = CFG.Text,
-        Font = Enum.Font.GothamBold,
-        TextSize = 10,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-
-    local status = New("TextLabel", {
-        Parent = row,
-        Position = UDim2.fromOffset(10, 32),
-        Size = UDim2.new(1, -20, 0, 20),
-        BackgroundTransparency = 1,
-        Text = "● NOT READ",
-        TextColor3 = CFG.Muted,
-        Font = Enum.Font.GothamBold,
-        TextSize = 9,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-
-    local extra = New("TextLabel", {
-        Parent = row,
-        Position = UDim2.fromOffset(10, 53),
-        Size = UDim2.new(1, -20, 0, 20),
-        BackgroundTransparency = 1,
-        Text = detail or "",
-        TextColor3 = CFG.SubText,
-        Font = Enum.Font.GothamMedium,
-        TextSize = 9,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-
-    Rows[name] = {
-        Bar = bar,
-        Status = status,
-        Extra = extra,
+    -- Prefer client-visible leaderstats/values.
+    local containers = {
+        Player,
+        Player:FindFirstChild("leaderstats"),
+        Player:FindFirstChild("Data"),
     }
+
+    local function readNames(names)
+        for _, container in ipairs(containers) do
+            if container then
+                for _, name in ipairs(names) do
+                    local obj = container:FindFirstChild(name, true)
+                    if obj and obj:IsA("ValueBase") then
+                        local ok, value = pcall(function()
+                            return obj.Value
+                        end)
+
+                        if ok then
+                            return value
+                        end
+                    end
+                end
+            end
+        end
+
+        for _, name in ipairs(names) do
+            local attr = Player:GetAttribute(name)
+            if attr ~= nil then
+                return attr
+            end
+        end
+
+        return nil
+    end
+
+    level = readNames({"Level", "Lv", "LevelData"})
+    beli = readNames({"Beli", "Money", "BeliCount"})
+    fragments = readNames({"Fragments", "Fragment"})
+
+    StatsText.Text =
+        "Name: " .. Player.Name ..
+        "\nLevel: " .. tostring(level or "NOT READ") ..
+        "\nBeli: " .. tostring(beli or "NOT READ") ..
+        "\nFragments: " .. tostring(fragments or "NOT READ")
 end
 
-MakeRow("Dragon Talon", 1, "Mastery: --/500")
-MakeRow("Dojo Belt", 2, "--/8")
-MakeRow("Dragon Storm", 3, "--")
-MakeRow("Dragon Heart", 4, "--")
-
 --========================================================--
--- BOTTOM INFO
+--========================================================--
+-- ACCOUNT INVENTORY
+-- Hiển thị inventory tài khoản, không lấy món đang cầm làm
+-- toàn bộ inventory.
 --========================================================--
 
-local BottomInfo = New("TextLabel", {
-    Parent = Body,
-    Position = UDim2.fromOffset(0, 300),
-    Size = UDim2.new(1, 0, 0, 24),
-    BackgroundTransparency = 1,
-    Text = "Ping: --    FPS: --    Players: --",
-    TextColor3 = CFG.SubText,
-    Font = Enum.Font.GothamMedium,
-    TextSize = 10,
-    TextXAlignment = Enum.TextXAlignment.Center,
-})
+local function GetAccountInventory()
+    local comm = FindCommF()
+    if not comm then
+        return nil
+    end
 
---========================================================--
--- STATUS BAR (logic intentionally left simple)
---========================================================--
+    -- Chỉ coi kết quả là inventory khi server thực sự trả table.
+    local commands = {
+        "getInventory",
+        "GetInventory",
+        "Inventory",
+    }
 
-local StatusBar = New("Frame", {
-    Parent = ScreenGui,
-    AnchorPoint = Vector2.new(0.5, 0),
-    Position = UDim2.new(0.5, 0, 0, 26),
-    Size = UDim2.fromOffset(500, 78),
-    BackgroundColor3 = CFG.Background,
-    BorderSizePixel = 0,
-    Visible = false,
-    Active = true,
-})
-Corner(StatusBar, 14)
-Stroke(StatusBar, CFG.Accent, 1.5, 0.12)
+    for _, command in ipairs(commands) do
+        local result = SafeInvoke(comm, command)
 
-local StatusImages = New("ImageButton", {
-    Parent = StatusBar,
-    Position = UDim2.fromOffset(11, 11),
-    Size = UDim2.fromOffset(54, 54),
-    BackgroundColor3 = CFG.Card,
-    BorderSizePixel = 0,
-    Image = CFG.Images,
-    ScaleType = Enum.ScaleType.Fit,
-    AutoButtonColor = false,
-})
-Corner(StatusImages, 11)
+        if type(result) == "table" then
+            return result
+        end
+    end
 
-New("TextLabel", {
-    Parent = StatusBar,
-    Position = UDim2.fromOffset(78, 10),
-    Size = UDim2.new(1, -90, 0, 18),
-    BackgroundTransparency = 1,
-    Text = CFG.ShortName .. " / KAITUN",
-    TextColor3 = CFG.AccentLight,
-    Font = Enum.Font.GothamBold,
-    TextSize = 11,
-    TextXAlignment = Enum.TextXAlignment.Left,
-})
-
-local StatusText = New("TextLabel", {
-    Parent = StatusBar,
-    Position = UDim2.fromOffset(78, 31),
-    Size = UDim2.new(1, -90, 0, 30),
-    BackgroundTransparency = 1,
-    Text = "Status : Checking...",
-    TextColor3 = CFG.Text,
-    Font = Enum.Font.GothamMedium,
-    TextSize = 11,
-    TextWrapped = true,
-    TextXAlignment = Enum.TextXAlignment.Left,
-})
-
-local Floating = New("ImageButton", {
-    Name = "Floating",
-    Parent = ScreenGui,
-    AnchorPoint = Vector2.new(0, 0.5),
-    Position = UDim2.new(0, 18, 0.5, 0),
-    Size = UDim2.fromOffset(58, 58),
-    BackgroundColor3 = CFG.Card,
-    BorderSizePixel = 0,
-    Image = CFG.Images,
-    ScaleType = Enum.ScaleType.Fit,
-    AutoButtonColor = false,
-    Visible = false,
-    Active = true,
-    ZIndex = 50,
-})
-Corner(Floating, 14)
-Stroke(Floating, CFG.AccentLight, 2, 0.08)
-
---========================================================--
--- OPEN/CLOSE
---========================================================--
-
-local function SetOpen(state)
-    Main.Visible = state
-    StatusBar.Visible = not state
-    Floating.Visible = not state
+    return nil
 end
 
-Minimize.MouseButton1Click:Connect(function() SetOpen(false) end)
-Close.MouseButton1Click:Connect(function() SetOpen(false) end)
-Images.MouseButton1Click:Connect(function() SetOpen(false) end)
-StatusImages.MouseButton1Click:Connect(function() SetOpen(true) end)
-Floating.MouseButton1Click:Connect(function() SetOpen(true) end)
+local function ParseAccountInventory(data)
+    if type(data) ~= "table" then
+        return nil
+    end
 
---========================================================--
--- MAIN DRAG
---========================================================--
+    local items = {}
+    local seen = {}
 
-local dragging = false
-local dragStart = Vector2.zero
-local startPos = Main.Position
+    local function add(name)
+        if type(name) ~= "string" or name == "" then
+            return
+        end
 
-Header.InputBegan:Connect(function(input)
-    if not ClickInput(input) then return end
-    dragging = true
-    dragStart = input.Position
-    startPos = Main.Position
-end)
+        local key = name:lower()
 
-UserInputService.InputChanged:Connect(function(input)
-    if not dragging then return end
-    if input.UserInputType ~= Enum.UserInputType.MouseMovement
-        and input.UserInputType ~= Enum.UserInputType.Touch then
+        if not seen[key] then
+            seen[key] = true
+            table.insert(items, name)
+        end
+    end
+
+    local function scan(tbl, parentKey)
+        if type(tbl) ~= "table" then
+            return
+        end
+
+        -- Common item shapes.
+        local itemName =
+            tbl.Name or
+            tbl.name or
+            tbl.ItemName or
+            tbl.itemName or
+            tbl.DisplayName or
+            tbl.displayName
+
+        if type(itemName) == "string" then
+            add(itemName)
+        end
+
+        -- Map-style inventories:
+        -- ["Saber"] = true
+        -- ["Bisento"] = 1
+        for key, value in pairs(tbl) do
+            if type(key) == "string" then
+                if type(value) == "boolean" and value then
+                    add(key)
+                elseif type(value) == "number" and value > 0 then
+                    add(key)
+                elseif type(value) == "table" then
+                    scan(value, key)
+                end
+            elseif type(value) == "table" then
+                scan(value, parentKey)
+            end
+        end
+    end
+
+    scan(data, "inventory")
+
+    table.sort(items, function(a, b)
+        return a:lower() < b:lower()
+    end)
+
+    return items
+end
+
+local function ScanInventory()
+    local inventory = GetAccountInventory()
+    local items = ParseAccountInventory(inventory)
+
+    if items == nil then
+        WeaponsText.Text =
+            "Inventory: NOT READ\n" ..
+            "Account inventory data is not exposed."
         return
     end
 
-    local delta = input.Position - dragStart
-    Main.Position = UDim2.new(
-        startPos.X.Scale, startPos.X.Offset + delta.X,
-        startPos.Y.Scale, startPos.Y.Offset + delta.Y
-    )
-end)
+    if #items == 0 then
+        WeaponsText.Text =
+            "Inventory: READ (0)\n" ..
+            "No inventory items returned."
+        return
+    end
 
-UserInputService.InputEnded:Connect(function(input)
-    if ClickInput(input) then dragging = false end
-end)
+    WeaponsText.Text =
+        "Inventory: READ (" .. tostring(#items) .. ")\n" ..
+        table.concat(items, "\n")
+end
 
 --========================================================--
--- DATA READER
+-- TARGET CHECKS
 --========================================================--
 
-local Reader = {}
+local function ScanProgress()
+    local comm = FindCommF()
 
-local function GetContainers()
-    return {
-        Player,
-        Player.Character,
-        Player:FindFirstChildOfClass("Backpack"),
-        Player:FindFirstChild("Data"),
-        Player:FindFirstChild("leaderstats"),
-    }
-end
+    local styles = SafeInvoke(comm, "getStyles")
+    local gameData = SafeInvoke(comm, "getGameData")
+    local inventory = SafeInvoke(comm, "getInventory")
 
-function Reader:GetValue(names)
-    for _, container in ipairs(GetContainers()) do
-        if container then
-            for _, wanted in ipairs(names) do
-                local obj = container:FindFirstChild(wanted, true)
+    -- Dragon Talon
+    local owned
+    local mastery
 
-                if obj and obj:IsA("ValueBase") then
-                    local ok, value = pcall(function() return obj.Value end)
-                    if ok then return value end
-                end
-            end
-        end
-    end
+    if type(styles) == "table" then
+        for key, value in pairs(styles) do
+            if type(value) == "table" then
+                local name = value.Name or value.name or key
 
-    for _, wanted in ipairs(names) do
-        local value = Player:GetAttribute(wanted)
-        if value ~= nil then return value end
-    end
+                if tostring(name):lower() == "dragon talon" then
+                    local flag =
+                        value.Owned or
+                        value.owned or
+                        value.IsUnlocked or
+                        value.isUnlocked
 
-    return nil
-end
-
-function Reader:GetAccount()
-    return {
-        Name = Player.Name,
-        Level = self:GetValue({"Level", "Lv", "LevelData"}),
-        Beli = self:GetValue({"Beli", "Money", "BeliCount"}),
-        Fragments = self:GetValue({"Fragments", "Fragment"}),
-    }
-end
-
-function Reader:GetOwnedTools()
-    local list, seen = {}, {}
-
-    local function add(name)
-        local key = Normalize(name)
-        if key == "" or seen[key] then return end
-        seen[key] = true
-        table.insert(list, tostring(name))
-    end
-
-    for _, container in ipairs(GetContainers()) do
-        if container then
-            for _, obj in ipairs(container:GetChildren()) do
-                if obj:IsA("Tool") then add(obj.Name) end
-            end
-        end
-    end
-
-    table.sort(list, function(a, b) return Normalize(a) < Normalize(b) end)
-    return list
-end
-
-function Reader:FindNamedEvidence(targetName)
-    local target = Normalize(targetName)
-    local found = false
-
-    for _, container in ipairs(GetContainers()) do
-        if container then
-            for _, obj in ipairs(container:GetDescendants()) do
-                if Normalize(obj.Name) == target then
-                    found = true
-                    if obj:IsA("Tool") then
-                        return true, "Tool"
+                    if type(flag) == "boolean" then
+                        owned = flag
                     end
-                end
 
-                if obj:IsA("BoolValue") and Normalize(obj.Name) == target then
-                    return obj.Value, "BoolValue"
+                    mastery = ReadNumber(value, {"Mastery", "mastery"})
                 end
             end
         end
     end
 
-    for attrName, attrValue in pairs(Player:GetAttributes()) do
-        if Normalize(attrName) == target then
-            local state = ToBoolean(attrValue)
-            if state ~= nil then
-                return state, "Attribute"
+    SetProgress(
+        "Dragon Talon",
+        owned,
+        "Mastery: " .. (mastery and (tostring(mastery) .. "/500") or "--/500")
+    )
+
+    -- Dojo Belt
+    local dojo
+
+    if type(gameData) == "table" then
+        dojo = ReadNumber(
+            gameData,
+            {"DojoProgress", "DracoBeltProgress", "BeltProgress"}
+        )
+    end
+
+    if dojo ~= nil and dojo >= 0 and dojo <= 8 then
+        SetProgress("Dojo Belt", dojo >= 8, tostring(dojo) .. "/8")
+    else
+        SetProgress("Dojo Belt", nil, "--/8")
+    end
+
+    -- Dragon Storm / Dragon Heart
+    local storm
+    local heart
+
+    if type(inventory) == "table" then
+        for key, value in pairs(inventory) do
+            local name
+
+            if type(value) == "table" then
+                name = value.Name or value.name
+            end
+
+            if not name and type(key) == "string" then
+                name = key
+            end
+
+            if name then
+                local low = tostring(name):lower()
+
+                if low == "dragon storm" then
+                    storm = true
+                elseif low == "dragon heart" then
+                    heart = true
+                end
             end
         end
     end
 
-    if found then
-        return true, "Object"
-    end
-
-    return nil, nil
-end
-
-function Reader:GetDojo()
-    local exactProgress = ToNumber(self:GetValue({
-        "DojoProgress", "DracoBeltProgress", "BeltProgress"
-    }))
-
-    if exactProgress ~= nil and exactProgress >= 0 and exactProgress <= 8 then
-        exactProgress = math.floor(exactProgress)
-        return exactProgress >= 8, tostring(exactProgress) .. "/8"
-    end
-
-    local count, known = 0, false
-    for _, belt in ipairs(DOJO_BELTS) do
-        local state = self:FindNamedEvidence(belt)
-        if state ~= nil then known = true end
-        if state == true then count += 1 end
-    end
-
-    if count == 8 then
-        return true, "8/8"
-    end
-    if known then
-        return false, tostring(count) .. "/8"
-    end
-
-    return nil, "--/8"
-end
-
--- Optional remote adapter. All calls are protected and can fail harmlessly.
-local function FindCommF()
-    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-    local commF = remotes and remotes:FindFirstChild("CommF_")
-    if commF and commF:IsA("RemoteFunction") then
-        return commF
-    end
-    return nil
-end
-
-local function SafeInvoke(remote, command)
-    if not remote then return nil end
-
-    local ok, result = pcall(function()
-        return remote:InvokeServer(command)
-    end)
-
-    return ok and result or nil
-end
-
-local function FindStyleData(root, wantedName)
-    if type(root) ~= "table" then return nil end
-
-    local wanted = Normalize(wantedName)
-
-    for key, value in pairs(root) do
-        local candidate
-
-        if type(value) == "table" then
-            candidate = value.Name or value.name or value.StyleName or value.styleName
-        end
-
-        if candidate == nil and type(key) == "string" then
-            candidate = key
-        end
-
-        if candidate and Normalize(candidate) == wanted then
-            return value
-        end
-    end
-
-    for _, value in pairs(root) do
-        if type(value) == "table" then
-            local nested = FindStyleData(value, wantedName)
-            if nested ~= nil then return nested end
-        end
-    end
-
-    return nil
-end
-
-local function ReadDragonTalon()
-    local remote = FindCommF()
-    local styles = SafeInvoke(remote, "getStyles")
-
-    if type(styles) ~= "table" then
-        return Reader:FindNamedEvidence("Dragon Talon"), nil
-    end
-
-    local data = FindStyleData(styles, "Dragon Talon")
-    if type(data) ~= "table" then
-        return nil, nil
-    end
-
-    local owned = ToBoolean(data.Owned)
-        or ToBoolean(data.owned)
-        or ToBoolean(data.IsUnlocked)
-        or ToBoolean(data.isUnlocked)
-
-    local mastery = ToNumber(data.Mastery)
-        or ToNumber(data.mastery)
-
-    return owned, mastery
-end
-
-local function ReadInventoryFlags()
-    local remote = FindCommF()
-    local inventory = SafeInvoke(remote, "getInventory")
-
-    if type(inventory) ~= "table" then
-        return nil, nil
-    end
-
-    local storm, heart = nil, nil
-
-    for key, value in pairs(inventory) do
-        local name
-        local owned
-
-        if type(value) == "table" then
-            name = value.Name or value.name or value.ItemName or value.itemName
-            owned = ToBoolean(value.Owned or value.owned or value.IsOwned or value.isOwned)
-        elseif type(value) == "string" then
-            name = value
-        elseif type(key) == "string" then
-            name = key
-        end
-
-        if name then
-            local low = Normalize(name)
-            if low == "dragon storm" then
-                storm = owned == false and false or true
-            elseif low == "dragon heart" then
-                heart = owned == false and false or true
-            end
-        end
-    end
-
-    return storm, heart
+    SetProgress("Dragon Storm", storm == true, storm and "FOUND" or "--")
+    SetProgress("Dragon Heart", heart == true, heart and "FOUND" or "--")
 end
 
 --========================================================--
--- UI UPDATE / CACHE
+-- AUTO FLY TO UZOTH
 --========================================================--
 
-local Cache = {
-    Account = {},
-    Items = "",
-    DragonTalonState = nil,
-    DragonTalonMastery = nil,
-    DojoState = nil,
-    DojoExtra = nil,
-    DragonStorm = nil,
-    DragonHeart = nil,
+local AutoFly = {
+    Flying = false,
+    Target = nil,
+    Connection = nil,
+    NoClipConnection = nil,
+    CollisionCache = {},
 }
 
-local function SetRow(name, state, extra)
-    local row = Rows[name]
-    if not row then return end
+local FLY_SPEED = 30
+local MIN_STOP_DISTANCE = 2
+local INTERACTION_TIMEOUT = 8
 
-    if state == true then
-        row.Status.Text = "● COMPLETE"
-        row.Status.TextColor3 = CFG.Success
-        row.Bar.BackgroundColor3 = CFG.Success
-    elseif state == false then
-        row.Status.Text = "● INCOMPLETE"
-        row.Status.TextColor3 = CFG.Danger
-        row.Bar.BackgroundColor3 = CFG.Danger
-    else
-        row.Status.Text = "● NOT READ"
-        row.Status.TextColor3 = CFG.Muted
-        row.Bar.BackgroundColor3 = CFG.Muted
+local function GetCharacter()
+    local character = Player.Character
+    if not character then
+        return nil
     end
 
-    row.Extra.Text = extra or ""
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local root = character:FindFirstChild("HumanoidRootPart")
+
+    if not humanoid or not root then
+        return nil
+    end
+
+    return character, humanoid, root
 end
 
-local function UpdateAccountUI(account)
-    local text = table.concat({
-        "Name: " .. tostring(account.Name or "--"),
-        "Level: " .. tostring(account.Level or "--"),
-        "Beli: " .. tostring(account.Beli or "--"),
-        "Fragments: " .. tostring(account.Fragments or "--"),
-    }, "\n")
+local function FindUzoth()
+    local exact = workspace:FindFirstChild("UZOTH", true)
 
-    if StatsText.Text ~= text then
-        StatsText.Text = text
+    if exact and (exact:IsA("Model") or exact:IsA("BasePart")) then
+        return exact
+    end
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name:lower() == "uzoth"
+            and (obj:IsA("Model") or obj:IsA("BasePart")) then
+            return obj
+        end
+    end
+
+    return nil
+end
+
+local function GetTargetRoot(target)
+    if not target then
+        return nil
+    end
+
+    if target:IsA("BasePart") then
+        return target
+    end
+
+    if target:IsA("Model") then
+        return target:FindFirstChild("HumanoidRootPart")
+            or target.PrimaryPart
+            or target:FindFirstChildWhichIsA("BasePart")
+    end
+
+    return nil
+end
+
+local function FindPrompt(target)
+    if not target then
+        return nil
+    end
+
+    for _, obj in ipairs(target:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and obj.Enabled then
+            return obj
+        end
+    end
+
+    return nil
+end
+
+local function StopAutoFly()
+    AutoFly.Flying = false
+    AutoFly.Target = nil
+
+    if AutoFly.Connection then
+        AutoFly.Connection:Disconnect()
+        AutoFly.Connection = nil
+    end
+
+    if AutoFly.NoClipConnection then
+        AutoFly.NoClipConnection:Disconnect()
+        AutoFly.NoClipConnection = nil
+    end
+
+    for part, original in pairs(AutoFly.CollisionCache) do
+        if part and part.Parent and part:IsA("BasePart") then
+            part.CanCollide = original
+        end
+    end
+
+    AutoFly.CollisionCache = {}
+
+    local _, humanoid = GetCharacter()
+    if humanoid then
+        humanoid.AutoRotate = true
     end
 end
 
-local function UpdateItemsUI(items)
-    local text = (#items > 0) and table.concat(items, "\n") or "No readable weapons/items."
+local function EnableNoClip(character)
+    AutoFly.CollisionCache = {}
 
-    if WeaponsText.Text ~= text then
-        WeaponsText.Text = text
-    end
-end
-
-local function UpdateProgressUI(owned, mastery, dojoState, dojoExtra, storm, heart)
-    SetRow("Dragon Talon", owned,
-        "Mastery: " .. (mastery and (tostring(mastery) .. "/500") or "--/500"))
-    SetRow("Dojo Belt", dojoState, dojoExtra or "--/8")
-    SetRow("Dragon Storm", storm, storm == true and "FOUND" or "--")
-    SetRow("Dragon Heart", heart, heart == true and "FOUND" or "--")
-end
-
-local function RunChecker()
-    local account = Reader:GetAccount()
-    local items = Reader:GetOwnedTools()
-
-    local talonOwned, mastery = ReadDragonTalon()
-    local dojoState, dojoExtra = Reader:GetDojo()
-    local storm, heart = ReadInventoryFlags()
-
-    -- Fallback to client-visible named evidence for the two items if inventory did not expose them.
-    if storm == nil then
-        storm = Reader:FindNamedEvidence("Dragon Storm")
-    end
-    if heart == nil then
-        heart = Reader:FindNamedEvidence("Dragon Heart")
+    for _, obj in ipairs(character:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            AutoFly.CollisionCache[obj] = obj.CanCollide
+            obj.CanCollide = false
+        end
     end
 
-    UpdateAccountUI(account)
-    UpdateItemsUI(items)
-    UpdateProgressUI(talonOwned, mastery, dojoState, dojoExtra, storm, heart)
-
-    Cache.Account = account
-    Cache.Items = table.concat(items, "\n")
-    Cache.DragonTalonState = talonOwned
-    Cache.DragonTalonMastery = mastery
-    Cache.DojoState = dojoState
-    Cache.DojoExtra = dojoExtra
-    Cache.DragonStorm = storm
-    Cache.DragonHeart = heart
-
-    StatusText.Text = "Status : Last check " .. os.date("%H:%M:%S")
+    AutoFly.NoClipConnection = character.DescendantAdded:Connect(function(obj)
+        if AutoFly.Flying and obj:IsA("BasePart") then
+            AutoFly.CollisionCache[obj] = obj.CanCollide
+            obj.CanCollide = false
+        end
+    end)
 end
+
+local function FlyToUzoth()
+    local target = FindUzoth()
+    if not target then
+        SetStatus("UZOTH not found")
+        return false
+    end
+
+    local targetRoot = GetTargetRoot(target)
+    if not targetRoot then
+        SetStatus("UZOTH root not found")
+        return false
+    end
+
+    local prompt = FindPrompt(target)
+    local stopDistance = prompt
+        and math.max(prompt.MaxActivationDistance - 1, MIN_STOP_DISTANCE)
+        or 6
+
+    local character, humanoid, root = GetCharacter()
+    if not character or not humanoid or not root then
+        SetStatus("Character not ready")
+        return false
+    end
+
+    StopAutoFly()
+
+    AutoFly.Flying = true
+    AutoFly.Target = target
+
+    humanoid.AutoRotate = false
+    EnableNoClip(character)
+
+    local startedAt = os.clock()
+
+    AutoFly.Connection = RunService.Heartbeat:Connect(function()
+        if not AutoFly.Flying then
+            return
+        end
+
+        local _, currentHumanoid, currentRoot = GetCharacter()
+
+        if not currentHumanoid or not currentRoot then
+            StopAutoFly()
+            return
+        end
+
+        targetRoot = GetTargetRoot(target)
+
+        if not targetRoot or not targetRoot.Parent then
+            StopAutoFly()
+            SetStatus("UZOTH target lost")
+            return
+        end
+
+        local offset = targetRoot.Position - currentRoot.Position
+        local distance = offset.Magnitude
+
+        if distance <= stopDistance then
+            StopAutoFly()
+            SetStatus("At UZOTH")
+            return
+        end
+
+        local direction = offset.Unit
+
+        currentRoot.AssemblyLinearVelocity = direction * FLY_SPEED
+        currentRoot.CFrame = CFrame.lookAt(
+            currentRoot.Position,
+            targetRoot.Position
+        )
+
+        if os.clock() - startedAt >= INTERACTION_TIMEOUT then
+            StopAutoFly()
+            SetStatus("Fly timeout")
+        end
+    end)
+
+    return true
+end
+
+_G.KaitunAutoFlyUzoth = {
+    FlyToUzoth = FlyToUzoth,
+    StopFly = StopAutoFly,
+    FindUzoth = FindUzoth,
+    IsFlying = function()
+        return AutoFly.Flying
+    end,
+}
 
 --========================================================--
--- STARTUP / LIVE LOOP
+-- CHECK LOOP
 --========================================================--
 
-SetRow("Dragon Talon", nil, "Mastery: --/500")
-SetRow("Dojo Belt", nil, "--/8")
-SetRow("Dragon Storm", nil, "--")
-SetRow("Dragon Heart", nil, "--")
-
--- Immediate first check.
-pcall(RunChecker)
-
--- One UI-oriented refresh every second.
 task.spawn(function()
     while ScreenGui.Parent do
-        task.wait(CFG.CheckInterval)
-        pcall(RunChecker)
+        local ok = pcall(function()
+            ScanAccountStatus()
+            ScanInventory()
+            ScanProgress()
+        end)
+
+        if not ok then
+            SetStatus("Check error - retrying")
+        else
+            SetStatus("Check complete • 0.5s")
+        end
+
+        task.wait(CHECK_INTERVAL)
     end
 end)
 
---========================================================--
--- FPS
---========================================================--
-
-local frames = 0
-local elapsed = 0
-
-RunService.RenderStepped:Connect(function(dt)
-    frames += 1
-    elapsed += dt
-
-    if elapsed >= 1 then
-        BottomInfo.Text =
-            "Ping: --    FPS: " .. tostring(frames)
-            .. "    Players: " .. tostring(#Players:GetPlayers())
-        frames = 0
-        elapsed = 0
-    end
-end)
-
-task.spawn(function()
-    pcall(function()
-        ContentProvider:PreloadAsync({Images, StatusImages, Floating})
-    end)
-end)
-
-print("KaitunHoaiHub Pro Checker loaded.")
+print("Kaitun HoaiHub combined checker + AutoFly loaded.")
