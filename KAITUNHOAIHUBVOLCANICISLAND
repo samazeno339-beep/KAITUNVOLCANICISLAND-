@@ -1,0 +1,809 @@
+--========================================================--
+--        Kaitun HoaiHub volcanic island - UI ONLY        --
+--   Dashboard + Status Bar + Purple/Pink Theme           --
+--========================================================--
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ContentProvider = game:GetService("ContentProvider")
+
+local Player = Players.LocalPlayer
+if not Player then
+	warn("Kaitun HoaiHub: LocalPlayer không tồn tại.")
+	return
+end
+
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+--========================================================--
+-- CONFIG
+--========================================================--
+
+local CFG = {
+	Name = "Kaitun HoaiHub volcanic island",
+	ShortName = "Kaitun HoaiHub",
+	Subtitle = "KAITUN ACCOUNT DASHBOARD",
+
+	Logo = "rbxassetid://82441709747144",
+
+	WindowWidth = 650,
+	WindowHeight = 405,
+
+	StatusWidth = 500,
+	StatusHeight = 78,
+
+	-- Lavender / Pink
+	Accent = Color3.fromRGB(196, 132, 252),
+	AccentLight = Color3.fromRGB(235, 184, 255),
+	AccentSoft = Color3.fromRGB(168, 112, 220),
+
+	Background = Color3.fromRGB(11, 9, 17),
+	Panel = Color3.fromRGB(20, 16, 29),
+	Card = Color3.fromRGB(27, 21, 39),
+	Card2 = Color3.fromRGB(32, 24, 46),
+
+	Text = Color3.fromRGB(247, 242, 252),
+	SubText = Color3.fromRGB(171, 160, 184),
+
+	Success = Color3.fromRGB(100, 235, 140),
+	SuccessSoft = Color3.fromRGB(48, 120, 74),
+
+	Danger = Color3.fromRGB(255, 95, 115),
+	DangerSoft = Color3.fromRGB(135, 47, 61),
+
+	Muted = Color3.fromRGB(103, 94, 114),
+
+	Corner = 14,
+}
+
+--========================================================--
+-- CLEAN OLD UI
+--========================================================--
+
+local old = PlayerGui:FindFirstChild("HoaiHub_Kaitun_UI")
+if old then
+	old:Destroy()
+end
+
+--========================================================--
+-- HELPERS
+--========================================================--
+
+local function New(className, props)
+	local obj = Instance.new(className)
+
+	for key, value in pairs(props or {}) do
+		obj[key] = value
+	end
+
+	return obj
+end
+
+local function Corner(parent, radius)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius or CFG.Corner)
+	c.Parent = parent
+	return c
+end
+
+local function Stroke(parent, color, thickness, transparency)
+	local s = Instance.new("UIStroke")
+	s.Color = color
+	s.Thickness = thickness or 1
+	s.Transparency = transparency or 0
+	s.Parent = parent
+	return s
+end
+
+local function InputIsClick(input)
+	return input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch
+end
+
+--========================================================--
+-- ROOT
+--========================================================--
+
+local ScreenGui = New("ScreenGui", {
+	Name = "HoaiHub_Kaitun_UI",
+	Parent = PlayerGui,
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	DisplayOrder = 999999,
+})
+
+--========================================================--
+-- MAIN WINDOW
+--========================================================--
+
+local Main = New("Frame", {
+	Name = "Main",
+	Parent = ScreenGui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Size = UDim2.fromOffset(CFG.WindowWidth, CFG.WindowHeight),
+	BackgroundColor3 = CFG.Background,
+	BorderSizePixel = 0,
+	Active = true,
+	Visible = true,
+})
+
+Corner(Main, 16)
+Stroke(Main, CFG.Accent, 1.5, 0.25)
+
+local MainScale = New("UIScale", {
+	Parent = Main,
+	Scale = 1,
+})
+
+--========================================================--
+-- HEADER
+--========================================================--
+
+local Header = New("Frame", {
+	Name = "Header",
+	Parent = Main,
+	Size = UDim2.new(1, 0, 0, 72),
+	BackgroundTransparency = 1,
+	Active = true,
+})
+
+local Logo = New("ImageButton", {
+	Name = "Logo",
+	Parent = Header,
+	Position = UDim2.fromOffset(14, 11),
+	Size = UDim2.fromOffset(50, 50),
+	BackgroundColor3 = CFG.Card2,
+	BackgroundTransparency = 0,
+	BorderSizePixel = 0,
+	Image = CFG.Logo,
+	ImageColor3 = Color3.fromRGB(255, 255, 255),
+	ScaleType = Enum.ScaleType.Fit,
+	AutoButtonColor = false,
+})
+
+Corner(Logo, 12)
+Stroke(Logo, CFG.AccentLight, 1.2, 0.2)
+
+local Title = New("TextLabel", {
+	Name = "Title",
+	Parent = Header,
+	Position = UDim2.fromOffset(76, 10),
+	Size = UDim2.new(1, -150, 0, 27),
+	BackgroundTransparency = 1,
+	Text = CFG.Name,
+	TextColor3 = CFG.Text,
+	Font = Enum.Font.GothamBold,
+	TextSize = 18,
+	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local Subtitle = New("TextLabel", {
+	Name = "Subtitle",
+	Parent = Header,
+	Position = UDim2.fromOffset(76, 38),
+	Size = UDim2.new(1, -150, 0, 17),
+	BackgroundTransparency = 1,
+	Text = CFG.Subtitle,
+	TextColor3 = CFG.AccentLight,
+	Font = Enum.Font.GothamMedium,
+	TextSize = 9,
+	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local Minimize = New("TextButton", {
+	Name = "Minimize",
+	Parent = Header,
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -46, 0.5, 0),
+	Size = UDim2.fromOffset(32, 30),
+	BackgroundColor3 = CFG.Card,
+	BorderSizePixel = 0,
+	Text = "—",
+	TextColor3 = CFG.Text,
+	Font = Enum.Font.GothamBold,
+	TextSize = 18,
+	AutoButtonColor = false,
+})
+
+Corner(Minimize, 9)
+
+local Close = New("TextButton", {
+	Name = "Close",
+	Parent = Header,
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -10, 0.5, 0),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = CFG.Card,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = CFG.Text,
+	Font = Enum.Font.GothamBold,
+	TextSize = 18,
+	AutoButtonColor = false,
+})
+
+Corner(Close, 9)
+
+--========================================================--
+-- BODY
+--========================================================--
+
+local Body = New("Frame", {
+	Name = "Body",
+	Parent = Main,
+	Position = UDim2.fromOffset(12, 78),
+	Size = UDim2.new(1, -24, 1, -90),
+	BackgroundTransparency = 1,
+})
+
+--========================================================--
+-- ACCOUNT STATS CARD
+--========================================================--
+
+local StatsCard = New("Frame", {
+	Name = "StatsCard",
+	Parent = Body,
+	Size = UDim2.new(0.49, -6, 0, 132),
+	BackgroundColor3 = CFG.Card,
+	BorderSizePixel = 0,
+})
+
+Corner(StatsCard, 12)
+Stroke(StatsCard, CFG.Accent, 1, 0.82)
+
+local StatsTitle = New("TextLabel", {
+	Parent = StatsCard,
+	Position = UDim2.fromOffset(14, 11),
+	Size = UDim2.new(1, -28, 0, 20),
+	BackgroundTransparency = 1,
+	Text = "ACCOUNT STATS",
+	TextColor3 = CFG.AccentLight,
+	Font = Enum.Font.GothamBold,
+	TextSize = 12,
+	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local StatsText = New("TextLabel", {
+	Parent = StatsCard,
+	Position = UDim2.fromOffset(14, 38),
+	Size = UDim2.new(1, -28, 1, -48),
+	BackgroundTransparency = 1,
+	Text = "Level: Loading...\nRace: Loading...\nBeli: Loading...\nFragments: Loading...",
+	TextColor3 = CFG.Text,
+	Font = Enum.Font.Gotham,
+	TextSize = 11,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Top,
+})
+
+--========================================================--
+-- TOP WEAPONS CARD
+--========================================================--
+
+local WeaponsCard = New("Frame", {
+	Name = "WeaponsCard",
+	Parent = Body,
+	Position = UDim2.new(0.51, 6, 0, 0),
+	Size = UDim2.new(0.49, -6, 0, 132),
+	BackgroundColor3 = CFG.Card,
+	BorderSizePixel = 0,
+})
+
+Corner(WeaponsCard, 12)
+Stroke(WeaponsCard, CFG.Accent, 1, 0.82)
+
+local WeaponsTitle = New("TextLabel", {
+	Parent = WeaponsCard,
+	Position = UDim2.fromOffset(14, 11),
+	Size = UDim2.new(1, -28, 0, 20),
+	BackgroundTransparency = 1,
+	Text = "TOP WEAPONS",
+	TextColor3 = CFG.AccentLight,
+	Font = Enum.Font.GothamBold,
+	TextSize = 12,
+	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local WeaponsText = New("TextLabel", {
+	Parent = WeaponsCard,
+	Position = UDim2.fromOffset(14, 40),
+	Size = UDim2.new(1, -28, 1, -50),
+	BackgroundTransparency = 1,
+	Text = "Sword / --\nGun / --\nSword / --",
+	TextColor3 = CFG.Text,
+	Font = Enum.Font.Gotham,
+	TextSize = 11,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Top,
+})
+
+--========================================================--
+-- PROGRESS CARD
+--========================================================--
+
+local ProgressCard = New("Frame", {
+	Name = "ProgressCard",
+	Parent = Body,
+	Position = UDim2.fromOffset(0, 145),
+	Size = UDim2.new(1, 0, 0, 144),
+	BackgroundColor3 = CFG.Card,
+	BorderSizePixel = 0,
+})
+
+Corner(ProgressCard, 12)
+Stroke(ProgressCard, CFG.Accent, 1, 0.82)
+
+local ProgressTitle = New("TextLabel", {
+	Parent = ProgressCard,
+	Position = UDim2.fromOffset(14, 10),
+	Size = UDim2.new(1, -28, 0, 20),
+	BackgroundTransparency = 1,
+	Text = "ACCOUNT PROGRESS",
+	TextColor3 = CFG.AccentLight,
+	Font = Enum.Font.GothamBold,
+	TextSize = 12,
+	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+--========================================================--
+-- PROGRESS ITEMS
+--========================================================--
+
+local ProgressRows = {}
+
+local ProgressData = {
+	"Dragon Talon",
+	"Complete Dojo",
+	"Dragon Storm",
+	"Dragon Heart",
+}
+
+local function CreateProgressRow(name, index)
+	local row = New("Frame", {
+		Name = "Progress_" .. index,
+		Parent = ProgressCard,
+		Position = UDim2.new(
+			(index - 1) * 0.25 + 0.01,
+			index > 1 and 3 or 0,
+			0,
+			39
+		),
+		Size = UDim2.new(0.25, -7, 0, 82),
+		BackgroundColor3 = CFG.Card2,
+		BorderSizePixel = 0,
+	})
+
+	Corner(row, 10)
+
+	local accentBar = New("Frame", {
+		Parent = row,
+		Position = UDim2.fromOffset(0, 0),
+		Size = UDim2.fromOffset(3, 82),
+		BackgroundColor3 = CFG.Danger,
+		BorderSizePixel = 0,
+	})
+
+	Corner(accentBar, 3)
+
+	local nameLabel = New("TextLabel", {
+		Parent = row,
+		Position = UDim2.fromOffset(10, 10),
+		Size = UDim2.new(1, -20, 0, 29),
+		BackgroundTransparency = 1,
+		Text = name,
+		TextColor3 = CFG.Text,
+		Font = Enum.Font.GothamMedium,
+		TextSize = 10,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Center,
+	})
+
+	local status = New("TextLabel", {
+		Parent = row,
+		Position = UDim2.fromOffset(10, 46),
+		Size = UDim2.new(1, -20, 0, 20),
+		BackgroundTransparency = 1,
+		Text = "●  INCOMPLETE",
+		TextColor3 = CFG.Danger,
+		Font = Enum.Font.GothamBold,
+		TextSize = 9,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	})
+
+	ProgressRows[name] = {
+		Frame = row,
+		Bar = accentBar,
+		Status = status,
+	}
+end
+
+for index, name in ipairs(ProgressData) do
+	CreateProgressRow(name, index)
+end
+
+--========================================================--
+-- BOTTOM INFO
+--========================================================--
+
+local BottomInfo = New("TextLabel", {
+	Parent = Body,
+	Position = UDim2.fromOffset(0, 300),
+	Size = UDim2.new(1, 0, 0, 24),
+	BackgroundTransparency = 1,
+	Text = "Ping: --    FPS: --    Players: --",
+	TextColor3 = CFG.SubText,
+	Font = Enum.Font.GothamMedium,
+	TextSize = 10,
+	TextXAlignment = Enum.TextXAlignment.Center,
+})
+
+--========================================================--
+-- STATUS BAR
+--========================================================--
+
+local StatusBar = New("Frame", {
+	Name = "StatusBar",
+	Parent = ScreenGui,
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 26),
+	Size = UDim2.fromOffset(CFG.StatusWidth, CFG.StatusHeight),
+	BackgroundColor3 = CFG.Background,
+	BorderSizePixel = 0,
+	Visible = false,
+	Active = true,
+})
+
+Corner(StatusBar, 14)
+Stroke(StatusBar, CFG.Accent, 1.5, 0.12)
+
+local StatusLogo = New("ImageButton", {
+	Name = "StatusLogo",
+	Parent = StatusBar,
+	Position = UDim2.fromOffset(11, 11),
+	Size = UDim2.fromOffset(54, 54),
+	BackgroundColor3 = CFG.Card,
+	BorderSizePixel = 0,
+	Image = CFG.Logo,
+	ImageColor3 = Color3.fromRGB(255, 255, 255),
+	ScaleType = Enum.ScaleType.Fit,
+	AutoButtonColor = false,
+})
+
+Corner(StatusLogo, 11)
+Stroke(StatusLogo, CFG.AccentLight, 1, 0.2)
+
+local StatusTitle = New("TextLabel", {
+	Parent = StatusBar,
+	Position = UDim2.fromOffset(78, 10),
+	Size = UDim2.new(1, -90, 0, 18),
+	BackgroundTransparency = 1,
+	Text = CFG.ShortName .. " / KAITUN",
+	TextColor3 = CFG.AccentLight,
+	Font = Enum.Font.GothamBold,
+	TextSize = 11,
+	TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local StatusText = New("TextLabel", {
+	Parent = StatusBar,
+	Position = UDim2.fromOffset(78, 31),
+	Size = UDim2.new(1, -90, 0, 30),
+	BackgroundTransparency = 1,
+	Text = "Status : Waiting...",
+	TextColor3 = CFG.Text,
+	Font = Enum.Font.GothamMedium,
+	TextSize = 11,
+	TextWrapped = true,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Center,
+})
+
+--========================================================--
+-- FLOATING OPEN BUTTON
+--========================================================--
+
+local Floating = New("ImageButton", {
+	Name = "FloatingLogo",
+	Parent = ScreenGui,
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 18, 0.5, 0),
+	Size = UDim2.fromOffset(58, 58),
+	BackgroundColor3 = CFG.Card,
+	BorderSizePixel = 0,
+	Image = CFG.Logo,
+	ImageColor3 = Color3.fromRGB(255, 255, 255),
+	ScaleType = Enum.ScaleType.Fit,
+	AutoButtonColor = false,
+	Visible = false,
+	Active = true,
+	ZIndex = 50,
+})
+
+Corner(Floating, 14)
+Stroke(Floating, CFG.AccentLight, 2, 0.08)
+
+--========================================================--
+-- STATE
+--========================================================--
+
+local Open = true
+
+local function SetOpen(state)
+	Open = state
+
+	Main.Visible = state
+	StatusBar.Visible = not state
+	Floating.Visible = not state
+end
+
+--========================================================--
+-- BUTTONS
+--========================================================--
+
+Minimize.MouseButton1Click:Connect(function()
+	SetOpen(false)
+end)
+
+Close.MouseButton1Click:Connect(function()
+	SetOpen(false)
+end)
+
+Logo.MouseButton1Click:Connect(function()
+	SetOpen(false)
+end)
+
+StatusLogo.MouseButton1Click:Connect(function()
+	SetOpen(true)
+end)
+
+Floating.MouseButton1Click:Connect(function()
+	SetOpen(true)
+end)
+
+--========================================================--
+-- MAIN DRAG
+--========================================================--
+
+local draggingMain = false
+local dragStart = Vector2.zero
+local startPosition = Main.Position
+local targetPosition = Main.Position
+
+local function startMainDrag(input)
+	if not InputIsClick(input) then
+		return
+	end
+
+	draggingMain = true
+	dragStart = input.Position
+	startPosition = Main.Position
+	targetPosition = Main.Position
+end
+
+Header.InputBegan:Connect(startMainDrag)
+
+UserInputService.InputChanged:Connect(function(input)
+	if not draggingMain then
+		return
+	end
+
+	if input.UserInputType ~= Enum.UserInputType.MouseMovement
+		and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local delta = input.Position - dragStart
+
+	targetPosition = UDim2.new(
+		startPosition.X.Scale,
+		startPosition.X.Offset + delta.X,
+		startPosition.Y.Scale,
+		startPosition.Y.Offset + delta.Y
+	)
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if InputIsClick(input) then
+		draggingMain = false
+	end
+end)
+
+--========================================================--
+-- STATUS DRAG
+--========================================================--
+
+local draggingStatus = false
+local statusDragStart = Vector2.zero
+local statusStartPosition = StatusBar.Position
+local statusTargetPosition = StatusBar.Position
+
+StatusBar.InputBegan:Connect(function(input)
+	if not InputIsClick(input) then
+		return
+	end
+
+	draggingStatus = true
+	statusDragStart = input.Position
+	statusStartPosition = StatusBar.Position
+	statusTargetPosition = StatusBar.Position
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if not draggingStatus then
+		return
+	end
+
+	if input.UserInputType ~= Enum.UserInputType.MouseMovement
+		and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local delta = input.Position - statusDragStart
+
+	statusTargetPosition = UDim2.new(
+		statusStartPosition.X.Scale,
+		statusStartPosition.X.Offset + delta.X,
+		statusStartPosition.Y.Scale,
+		statusStartPosition.Y.Offset + delta.Y
+	)
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if InputIsClick(input) then
+		draggingStatus = false
+	end
+end)
+
+--========================================================--
+-- FLOATING BUTTON DRAG
+--========================================================--
+
+local draggingFloating = false
+local floatingMoved = false
+local floatingStart = Vector2.zero
+local floatingStartPos = Floating.Position
+local dragThreshold = 6
+
+Floating.InputBegan:Connect(function(input)
+	if not InputIsClick(input) then
+		return
+	end
+
+	draggingFloating = true
+	floatingMoved = false
+	floatingStart = input.Position
+	floatingStartPos = Floating.Position
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if not draggingFloating then
+		return
+	end
+
+	if input.UserInputType ~= Enum.UserInputType.MouseMovement
+		and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local delta = input.Position - floatingStart
+
+	if delta.Magnitude >= dragThreshold then
+		floatingMoved = true
+	end
+
+	Floating.Position = UDim2.new(
+		floatingStartPos.X.Scale,
+		floatingStartPos.X.Offset + delta.X,
+
+		floatingStartPos.Y.Scale,
+		floatingStartPos.Y.Offset + delta.Y
+	)
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if not InputIsClick(input) then
+		return
+	end
+
+	draggingFloating = false
+end)
+
+--========================================================--
+-- DEMO PROGRESS API
+-- Sau này gắn logic Kaitun thật vào đây
+--========================================================--
+
+local function SetProgress(name, completed)
+	local data = ProgressRows[name]
+	if not data then
+		return
+	end
+
+	if completed then
+		data.Status.Text = "●  COMPLETE"
+		data.Status.TextColor3 = CFG.Success
+		data.Bar.BackgroundColor3 = CFG.Success
+	else
+		data.Status.Text = "●  INCOMPLETE"
+		data.Status.TextColor3 = CFG.Danger
+		data.Bar.BackgroundColor3 = CFG.Danger
+	end
+end
+
+local function SetStatus(text)
+	StatusText.Text = "Status : " .. tostring(text)
+end
+
+--========================================================--
+-- DEMO
+--========================================================--
+
+-- Chỉ để test giao diện.
+-- Khi gắn logic Kaitun thật, thay những dòng này bằng dữ liệu game.
+
+SetProgress("Dragon Talon", false)
+SetProgress("Complete Dojo", false)
+SetProgress("Dragon Storm", false)
+SetProgress("Dragon Heart", false)
+
+SetStatus("Waiting...")
+
+--========================================================--
+-- PRELOAD
+--========================================================--
+
+task.spawn(function()
+	pcall(function()
+		ContentProvider:PreloadAsync({
+			Logo,
+			StatusLogo,
+			Floating,
+		})
+	end)
+end)
+
+--========================================================--
+-- FPS
+--========================================================--
+
+local fps = 60
+local fpsTimer = 0
+local frameCount = 0
+
+--========================================================--
+-- SMOOTH UPDATE
+--========================================================--
+
+RunService.RenderStepped:Connect(function(dt)
+	-- Main drag smoothing
+	local moveAlpha = math.clamp(dt * 22, 0, 1)
+	Main.Position = Main.Position:Lerp(targetPosition, moveAlpha)
+
+	-- Status drag smoothing
+	local statusAlpha = math.clamp(dt * 22, 0, 1)
+	StatusBar.Position = StatusBar.Position:Lerp(statusTargetPosition, statusAlpha)
+
+	-- FPS
+	frameCount += 1
+	fpsTimer += dt
+
+	if fpsTimer >= 1 then
+		fps = frameCount
+		frameCount = 0
+		fpsTimer = 0
+
+		local playersCount = #Players:GetPlayers()
+
+		BottomInfo.Text =
+			"Ping: --    FPS: "
+			.. tostring(fps)
+			.. "    Players: "
+			.. tostring(playersCount)
+	end
+end)
+
+print("Kaitun HoaiHub volcanic island UI loaded.")
