@@ -1,260 +1,580 @@
---//================================================
+--//========================================================
 --// HOÀI HUB
---// Kaitun Volcanic Island A-Z
---// UI ONLY
---//================================================
+--// Kaitun volcanic island A-Z
+--// Purple UI
+--// Floating Logo Toggle
+--//========================================================
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- Xóa UI cũ nếu có
-local old = PlayerGui:FindFirstChild("HoaiHub")
-if old then
-	old:Destroy()
-end
-
---================================================
+--========================================================
 -- CONFIG
---================================================
+--========================================================
 
 local CONFIG = {
 	Title = "HOÀI HUB",
 	Subtitle = "Kaitun volcanic island A-Z",
+
+	-- Logo của m
 	Logo = "rbxassetid://82514517939235",
 
+	-- Purple
 	Accent = Color3.fromRGB(165, 70, 255),
-	AccentLight = Color3.fromRGB(205, 140, 255),
+	AccentLight = Color3.fromRGB(215, 150, 255),
 
+	-- UI
 	Background = Color3.fromRGB(13, 10, 18),
-	ButtonOff = Color3.fromRGB(48, 24, 66),
-	ButtonOn = Color3.fromRGB(105, 42, 155),
+
+	MenuSize = UDim2.fromOffset(310, 120),
+
+	MenuPosition = UDim2.new(
+		0.5, -155,
+		0.5, -60
+	),
+
+	StatusPosition = UDim2.new(
+		0.5, -155,
+		0.5, -105
+	),
+
+	FloatingPosition = UDim2.new(
+		0, 24,
+		0.5, -27
+	)
 }
 
---================================================
+--========================================================
+-- REMOVE OLD GUI
+--========================================================
+
+local oldGui = PlayerGui:FindFirstChild("HoaiHub")
+
+if oldGui then
+	oldGui:Destroy()
+end
+
+--========================================================
 -- SCREEN GUI
---================================================
+--========================================================
 
 local ScreenGui = Instance.new("ScreenGui")
+
 ScreenGui.Name = "HoaiHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
 ScreenGui.Parent = PlayerGui
 
---================================================
--- MAIN
---================================================
-
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.fromOffset(320, 175)
-Main.Position = UDim2.new(0.5, -160, 0.5, -87)
-Main.BackgroundColor3 = CONFIG.Background
-Main.BackgroundTransparency = 0.03
-Main.BorderSizePixel = 0
-Main.Parent = ScreenGui
-
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 9)
-Corner.Parent = Main
-
-local Border = Instance.new("UIStroke")
-Border.Color = CONFIG.Accent
-Border.Thickness = 2
-Border.Parent = Main
-
---================================================
--- LOGO
---================================================
-
-local Logo = Instance.new("ImageLabel")
-Logo.Name = "Logo"
-Logo.BackgroundTransparency = 1
-Logo.Size = UDim2.fromOffset(42, 42)
-Logo.Position = UDim2.new(0, 12, 0, 12)
-Logo.Image = CONFIG.Logo
-Logo.ScaleType = Enum.ScaleType.Fit
-Logo.Parent = Main
-
---================================================
+--========================================================
 -- STATUS
---================================================
+--========================================================
 
 local Status = Instance.new("TextLabel")
+
 Status.Name = "Status"
+
+Status.Size = UDim2.fromOffset(310, 24)
+
+Status.Position = CONFIG.StatusPosition
+
 Status.BackgroundTransparency = 1
-Status.Position = UDim2.new(0, 55, 0, 6)
-Status.Size = UDim2.new(1, -65, 0, 20)
 
 Status.Font = Enum.Font.GothamMedium
-Status.Text = "STATUS: Waiting..."
-Status.TextColor3 = CONFIG.AccentLight
-Status.TextSize = 11
-Status.TextXAlignment = Enum.TextXAlignment.Center
-Status.Parent = Main
 
---================================================
+Status.Text = "STATUS: Waiting..."
+
+Status.TextColor3 = CONFIG.AccentLight
+
+Status.TextSize = 12
+
+Status.TextXAlignment = Enum.TextXAlignment.Center
+
+Status.ZIndex = 50
+
+Status.Parent = ScreenGui
+
+--========================================================
+-- MAIN MENU
+--========================================================
+
+local Main = Instance.new("Frame")
+
+Main.Name = "Main"
+
+Main.Size = CONFIG.MenuSize
+
+Main.Position = CONFIG.MenuPosition
+
+Main.BackgroundColor3 = CONFIG.Background
+
+Main.BackgroundTransparency = 0.03
+
+Main.BorderSizePixel = 0
+
+Main.ZIndex = 10
+
+Main.Parent = ScreenGui
+
+-- Corner
+
+local MainCorner = Instance.new("UICorner")
+
+MainCorner.CornerRadius = UDim.new(0, 9)
+
+MainCorner.Parent = Main
+
+-- Border
+
+local MainStroke = Instance.new("UIStroke")
+
+MainStroke.Color = CONFIG.Accent
+
+MainStroke.Thickness = 2.5
+
+MainStroke.Parent = Main
+
+--========================================================
+-- LOGO TRONG MENU
+--========================================================
+
+local MenuLogo = Instance.new("ImageLabel")
+
+MenuLogo.Name = "MenuLogo"
+
+MenuLogo.BackgroundTransparency = 1
+
+MenuLogo.Size = UDim2.fromOffset(42, 42)
+
+MenuLogo.Position = UDim2.new(
+	0, 10,
+	0, 10
+)
+
+MenuLogo.Image = CONFIG.Logo
+
+MenuLogo.ScaleType = Enum.ScaleType.Fit
+
+MenuLogo.ZIndex = 11
+
+MenuLogo.Parent = Main
+
+--========================================================
 -- TITLE
---================================================
+--========================================================
 
 local Title = Instance.new("TextLabel")
+
 Title.Name = "Title"
+
 Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 55, 0, 24)
-Title.Size = UDim2.new(1, -65, 0, 30)
+
+Title.Position = UDim2.new(
+	0, 50,
+	0, 10
+)
+
+Title.Size = UDim2.new(
+	1, -60,
+	0, 30
+)
 
 Title.Font = Enum.Font.GothamBold
+
 Title.Text = CONFIG.Title
-Title.TextColor3 = Color3.fromRGB(245, 238, 255)
+
+Title.TextColor3 = Color3.fromRGB(
+	245,
+	238,
+	255
+)
+
 Title.TextSize = 19
+
 Title.TextXAlignment = Enum.TextXAlignment.Center
+
+Title.ZIndex = 11
+
 Title.Parent = Main
 
---================================================
+--========================================================
 -- SUBTITLE
---================================================
+--========================================================
 
 local Subtitle = Instance.new("TextLabel")
+
 Subtitle.Name = "Subtitle"
+
 Subtitle.BackgroundTransparency = 1
-Subtitle.Position = UDim2.new(0, 10, 0, 65)
-Subtitle.Size = UDim2.new(1, -20, 0, 24)
+
+Subtitle.Position = UDim2.new(
+	0, 10,
+	0, 56
+)
+
+Subtitle.Size = UDim2.new(
+	1, -20,
+	0, 28
+)
 
 Subtitle.Font = Enum.Font.GothamSemibold
+
 Subtitle.Text = CONFIG.Subtitle
-Subtitle.TextColor3 = Color3.fromRGB(195, 165, 225)
+
+Subtitle.TextColor3 = Color3.fromRGB(
+	205,
+	175,
+	235
+)
+
 Subtitle.TextSize = 13
+
 Subtitle.TextXAlignment = Enum.TextXAlignment.Center
+
+Subtitle.ZIndex = 11
+
 Subtitle.Parent = Main
 
---================================================
--- KAITUN BUTTON
---================================================
+--========================================================
+-- FLOATING LOGO BUTTON
+--========================================================
 
-local KaitunButton = Instance.new("TextButton")
-KaitunButton.Name = "KaitunButton"
-KaitunButton.Size = UDim2.fromOffset(250, 43)
-KaitunButton.Position = UDim2.new(0.5, -125, 0, 105)
+local FloatButton = Instance.new("ImageButton")
 
-KaitunButton.BackgroundColor3 = CONFIG.ButtonOff
-KaitunButton.BorderSizePixel = 0
-KaitunButton.AutoButtonColor = false
+FloatButton.Name = "FloatingLogo"
 
-KaitunButton.Font = Enum.Font.GothamBold
-KaitunButton.Text = "KAITUN : OFF"
-KaitunButton.TextColor3 = Color3.fromRGB(225, 210, 240)
-KaitunButton.TextSize = 14
+FloatButton.Size = UDim2.fromOffset(
+	55,
+	55
+)
 
-KaitunButton.Parent = Main
+FloatButton.Position = CONFIG.FloatingPosition
 
-local ButtonCorner = Instance.new("UICorner")
-ButtonCorner.CornerRadius = UDim.new(0, 7)
-ButtonCorner.Parent = KaitunButton
+FloatButton.BackgroundColor3 = CONFIG.Background
 
-local ButtonStroke = Instance.new("UIStroke")
-ButtonStroke.Color = CONFIG.Accent
-ButtonStroke.Thickness = 1.5
-ButtonStroke.Parent = KaitunButton
+FloatButton.BackgroundTransparency = 0.02
 
---================================================
--- STATUS FUNCTION
---================================================
+FloatButton.BorderSizePixel = 0
 
-local function SetStatus(text)
-	Status.Text = "STATUS: " .. tostring(text)
+-- Logo của m
+FloatButton.Image = CONFIG.Logo
+
+FloatButton.ScaleType = Enum.ScaleType.Fit
+
+FloatButton.AutoButtonColor = false
+
+FloatButton.ZIndex = 100
+
+FloatButton.Parent = ScreenGui
+
+-- Tròn
+
+local FloatCorner = Instance.new("UICorner")
+
+FloatCorner.CornerRadius = UDim.new(
+	1,
+	0
+)
+
+FloatCorner.Parent = FloatButton
+
+-- Viền tím
+
+local FloatStroke = Instance.new("UIStroke")
+
+FloatStroke.Color = CONFIG.Accent
+
+FloatStroke.Thickness = 2.5
+
+FloatStroke.Parent = FloatButton
+
+--========================================================
+-- MENU SHOW / HIDE
+--========================================================
+
+local MenuVisible = true
+
+local function ShowMenu()
+
+	MenuVisible = true
+
+	Main.Visible = true
+
+	Main.Size = UDim2.fromOffset(
+		0,
+		0
+	)
+
+	local tween = TweenService:Create(
+		Main,
+
+		TweenInfo.new(
+			0.22,
+			Enum.EasingStyle.Back,
+			Enum.EasingDirection.Out
+		),
+
+		{
+			Size = CONFIG.MenuSize
+		}
+	)
+
+	tween:Play()
+
 end
 
--- Để sau này dùng từ các chức năng Kaitun
-_G.HoaiHubSetStatus = SetStatus
+local function HideMenu()
 
---================================================
--- KAITUN TOGGLE
---================================================
+	MenuVisible = false
 
-local KaitunEnabled = false
+	local tween = TweenService:Create(
+		Main,
 
-local function UpdateKaitunButton()
-	if KaitunEnabled then
+		TweenInfo.new(
+			0.16,
+			Enum.EasingStyle.Quad,
+			Enum.EasingDirection.In
+		),
 
-		KaitunButton.Text = "KAITUN : ON"
-		KaitunButton.BackgroundColor3 = CONFIG.ButtonOn
-		KaitunButton.TextColor3 = Color3.fromRGB(255, 245, 255)
+		{
+			Size = UDim2.fromOffset(
+				0,
+				0
+			)
+		}
+	)
+
+	tween:Play()
+
+	tween.Completed:Connect(function()
+
+		if not MenuVisible then
+			Main.Visible = false
+		end
+
+	end)
+
+end
+
+--========================================================
+-- FLOATING LOGO CLICK
+--========================================================
+
+FloatButton.MouseButton1Click:Connect(function()
+
+	if MenuVisible then
+
+		HideMenu()
 
 	else
 
-		KaitunButton.Text = "KAITUN : OFF"
-		KaitunButton.BackgroundColor3 = CONFIG.ButtonOff
-		KaitunButton.TextColor3 = Color3.fromRGB(225, 210, 240)
+		ShowMenu()
 
-	end
-end
-
-KaitunButton.MouseButton1Click:Connect(function()
-
-	KaitunEnabled = not KaitunEnabled
-
-	UpdateKaitunButton()
-
-	if KaitunEnabled then
-		SetStatus("Kaitun Enabled")
-	else
-		SetStatus("Kaitun Disabled")
 	end
 
 end)
 
---================================================
+--========================================================
+-- DRAG FLOATING LOGO
+--========================================================
+
+local Dragging = false
+
+local DragStart = nil
+
+local StartPosition = nil
+
+FloatButton.InputBegan:Connect(function(input)
+
+	if
+		input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch
+	then
+
+		Dragging = true
+
+		DragStart = input.Position
+
+		StartPosition = FloatButton.Position
+
+		input.Changed:Connect(function()
+
+			if input.UserInputState == Enum.UserInputState.End then
+
+				Dragging = false
+
+			end
+
+		end)
+
+	end
+
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+	if not Dragging then
+		return
+	end
+
+	if
+		input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch
+	then
+
+		local Delta = input.Position - DragStart
+
+		FloatButton.Position = UDim2.new(
+			StartPosition.X.Scale,
+			StartPosition.X.Offset + Delta.X,
+
+			StartPosition.Y.Scale,
+			StartPosition.Y.Offset + Delta.Y
+		)
+
+	end
+
+end)
+
+--========================================================
+-- STATUS FUNCTION
+--========================================================
+
+local function SetStatus(Text)
+
+	Status.Text = "STATUS: " .. tostring(Text)
+
+end
+
+-- Cho phần Kaitun sau này gọi
+_G.HoaiHubSetStatus = SetStatus
+
+--========================================================
+-- STATUS LUÔN HIỆN
+--========================================================
+
+Status.Visible = true
+
+SetStatus("Waiting...")
+
+--========================================================
 -- PURPLE GLOW
---================================================
+--========================================================
 
 task.spawn(function()
 
-	while Main.Parent do
+	while ScreenGui.Parent do
 
-		local t1 = TweenService:Create(
-			Border,
+		local Tween1 = TweenService:Create(
+
+			MainStroke,
+
 			TweenInfo.new(
 				1.2,
 				Enum.EasingStyle.Sine,
 				Enum.EasingDirection.InOut
 			),
+
 			{
-				Thickness = 3,
-				Color = CONFIG.AccentLight
+				Color = CONFIG.AccentLight,
+				Thickness = 3
 			}
+
 		)
 
-		t1:Play()
-		t1.Completed:Wait()
+		Tween1:Play()
 
-		local t2 = TweenService:Create(
-			Border,
+		Tween1.Completed:Wait()
+
+		local Tween2 = TweenService:Create(
+
+			MainStroke,
+
 			TweenInfo.new(
 				1.2,
 				Enum.EasingStyle.Sine,
 				Enum.EasingDirection.InOut
 			),
+
 			{
-				Thickness = 2,
-				Color = CONFIG.Accent
+				Color = CONFIG.Accent,
+				Thickness = 2.5
 			}
+
 		)
 
-		t2:Play()
-		t2.Completed:Wait()
+		Tween2:Play()
+
+		Tween2.Completed:Wait()
 
 	end
 
 end)
 
---================================================
--- START
---================================================
+--========================================================
+-- FLOATING BUTTON GLOW
+--========================================================
 
-UpdateKaitunButton()
-SetStatus("Waiting...")
+task.spawn(function()
 
-print("HOÀI HUB loaded")
+	while ScreenGui.Parent do
+
+		local Tween1 = TweenService:Create(
+
+			FloatStroke,
+
+			TweenInfo.new(
+				1,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Color = CONFIG.AccentLight,
+				Thickness = 3.5
+			}
+
+		)
+
+		Tween1:Play()
+
+		Tween1.Completed:Wait()
+
+		local Tween2 = TweenService:Create(
+
+			FloatStroke,
+
+			TweenInfo.new(
+				1,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+
+			{
+				Color = CONFIG.Accent,
+				Thickness = 2.5
+			}
+
+		)
+
+		Tween2:Play()
+
+		Tween2.Completed:Wait()
+
+	end
+
+end)
+
+--========================================================
+-- READY
+--========================================================
+
+Main.Visible = true
+Status.Visible = true
+
+print("HOÀI HUB - UI Loaded")
