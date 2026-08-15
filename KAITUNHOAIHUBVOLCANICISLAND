@@ -750,55 +750,68 @@ pcall(function()
 end)
 
 print("EXTREME LOW GRAPHICS: ACTIVE")
---==================================================
---==================================================
--- AUTO SELECT MARINES
---==================================================
+--// AUTO SELECT MARINES
+--// Blox Fruits
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
 task.spawn(function()
 
-	-- Chờ game load hoàn tất
-	if not game:IsLoaded() then
-		game.Loaded:Wait()
+	-- Chờ Main
+	local Main = PlayerGui:WaitForChild("Main", 30)
+	if not Main then
+		warn("HOÀI HUB: Không tìm thấy Main")
+		return
 	end
 
-	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
-	local CommF_ = Remotes:WaitForChild("CommF_")
-
-	-- Chờ DataLoaded nếu game có object này
-	local DataLoaded = Player:FindFirstChild("DataLoaded")
-
-	if DataLoaded then
-		pcall(function()
-			DataLoaded:GetPropertyChangedSignal("Value"):Wait()
-		end)
+	-- Chờ ChooseTeam
+	local ChooseTeam = Main:WaitForChild("ChooseTeam", 30)
+	if not ChooseTeam then
+		warn("HOÀI HUB: Không tìm thấy ChooseTeam")
+		return
 	end
 
-	-- Nếu chưa có team thì chọn Marines
-	local Data = Player:FindFirstChild("Data")
-
-	if Data then
-		local Team = Data:FindFirstChild("Team")
-
-		if not Team or Team.Value == "" then
-			pcall(function()
-				CommF_:InvokeServer("SetTeam", "Marines")
-			end)
-		end
-	else
-		-- Dự phòng: thử chọn Marines trực tiếp
-		pcall(function()
-			CommF_:InvokeServer("SetTeam", "Marines")
-		end)
+	-- Chờ UI chọn phe hiện lên
+	while not ChooseTeam.Visible do
+		task.wait(0.1)
 	end
+
+	-- Tìm ô Marines
+	local Marines = ChooseTeam:WaitForChild("Container", 10)
+		and ChooseTeam.Container:WaitForChild("Marines", 10)
+
+	if not Marines then
+		warn("HOÀI HUB: Không tìm thấy Marines")
+		return
+	end
+
+	local Frame = Marines:WaitForChild("Frame", 10)
+	local Viewport = Frame and Frame:WaitForChild("ViewportFrame", 10)
+	local Button = Viewport and Viewport:WaitForChild("TextButton", 10)
+
+	if not Button then
+		warn("HOÀI HUB: Không tìm thấy nút chọn Marines")
+		return
+	end
+
+	-- Kích hoạt nút
+	pcall(function()
+		Button:Activate()
+	end)
+
+	-- Một số UI dùng input giả lập để kích hoạt
+	pcall(function()
+		local VirtualUser = game:GetService("VirtualUser")
+		VirtualUser:Button1Down(Vector2.new(100, 100))
+		task.wait(0.1)
+		VirtualUser:Button1Up(Vector2.new(100, 100))
+	end)
 
 	if _G.HoaiHubSetStatus then
-		_G.HoaiHubSetStatus("Marine Selected")
+		_G.HoaiHubSetStatus("Marines Selected")
 	end
 
 	print("HOÀI HUB: Marines selected")
