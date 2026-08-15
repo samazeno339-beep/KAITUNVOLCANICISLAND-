@@ -751,113 +751,107 @@ end)
 
 print("EXTREME LOW GRAPHICS: ACTIVE")
 --========================================================
--- AUTO SELECT MARINES - DEBUG
+-- AUTO SELECT MARINES - FIX
 --========================================================
 
 task.spawn(function()
 
-	local function Status(text)
+	local Players = game:GetService("Players")
+	local Player = Players.LocalPlayer
+	local PlayerGui = Player:WaitForChild("PlayerGui")
+
+	local function SetHubStatus(text)
 		if _G.HoaiHubSetStatus then
 			_G.HoaiHubSetStatus(text)
 		else
-			print("HOAI HUB:", text)
+			print("[HOAI HUB] " .. text)
 		end
 	end
 
-	local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+	SetHubStatus("Searching team screen...")
 
-	Status("Waiting for Main...")
+	local Main
+	local StartTime = os.clock()
 
-	local Main = PlayerGui:WaitForChild("Main", 60)
+	-- Tìm Main của game, bỏ qua Main trong HOÀI HUB
+	while not Main and os.clock() - StartTime < 60 do
+
+		for _, obj in ipairs(PlayerGui:GetDescendants()) do
+
+			if obj:IsA("ScreenGui")
+				and obj.Name ~= "HoaiHub" then
+
+				local found = obj:FindFirstChild("Main")
+
+				if found then
+					Main = found
+					break
+				end
+			end
+		end
+
+		if not Main then
+			task.wait(0.2)
+		end
+	end
 
 	if not Main then
-		Status("Main not found")
-		warn("HOAI HUB: Main not found")
+		SetHubStatus("Team UI not found")
+		warn("HOAI HUB: Game team UI not found")
 		return
 	end
 
-	Status("Main Found")
+	SetHubStatus("Team UI found")
 	task.wait(0.5)
 
-	local ChooseTeam = Main:WaitForChild("ChooseTeam", 60)
+	-- Tìm ChooseTeam bên trong Main
+	local ChooseTeam = Main:FindFirstChild("ChooseTeam", true)
 
 	if not ChooseTeam then
-		Status("ChooseTeam not found")
+		SetHubStatus("ChooseTeam not found")
 		warn("HOAI HUB: ChooseTeam not found")
 		return
 	end
 
-	Status("ChooseTeam Found")
+	SetHubStatus("Choosing Marines...")
 	task.wait(0.5)
 
-	while not ChooseTeam.Visible do
-		Status("Waiting for team screen...")
-		task.wait(0.2)
-	end
-
-	Status("Searching Marines...")
-	task.wait(0.5)
-
-	local Container = ChooseTeam:FindFirstChild("Container")
-
-	if not Container then
-		Status("Container not found")
-		warn("HOAI HUB: Container not found")
-		return
-	end
-
-	Status("Container Found")
-	task.wait(0.5)
-
-	local Marines = Container:FindFirstChild("Marines")
+	-- Tìm Marines
+	local Marines = ChooseTeam:FindFirstChild("Marines", true)
 
 	if not Marines then
-		Status("Marines not found")
+		SetHubStatus("Marines not found")
 		warn("HOAI HUB: Marines not found")
 		return
 	end
 
-	Status("Marines Found")
-	task.wait(0.5)
+	-- Tìm button nằm trong ô Marines
+	local Button
 
-	local Frame = Marines:FindFirstChild("Frame")
-
-	if not Frame then
-		Status("Marine Frame not found")
-		return
+	for _, obj in ipairs(Marines:GetDescendants()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			Button = obj
+			break
+		end
 	end
-
-	Status("Marine Frame Found")
-	task.wait(0.5)
-
-	local ViewportFrame = Frame:FindFirstChild("ViewportFrame")
-
-	if not ViewportFrame then
-		Status("ViewportFrame not found")
-		return
-	end
-
-	Status("ViewportFrame Found")
-	task.wait(0.5)
-
-	local Button = ViewportFrame:FindFirstChild("TextButton")
 
 	if not Button then
-		Status("Marine Button not found")
+		SetHubStatus("Marine button not found")
+		warn("HOAI HUB: Marine button not found")
 		return
 	end
 
-	Status("Marine Button Found")
-	task.wait(0.5)
+	SetHubStatus("Selecting Marines...")
+	task.wait(0.3)
 
 	pcall(function()
 		Button:Activate()
 	end)
 
-	Status("Selecting Marines...")
+	task.wait(1)
 
-	task.wait(2)
+	SetHubStatus("Marines Selected")
 
-	Status("Marines Selected")
+	print("HOAI HUB: Marines selected")
 
 end)
