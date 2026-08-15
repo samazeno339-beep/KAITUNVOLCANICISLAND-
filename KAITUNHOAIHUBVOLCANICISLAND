@@ -751,7 +751,7 @@ end)
 
 print("EXTREME LOW GRAPHICS: ACTIVE")
 --========================================================
--- AUTO SELECT MARINES - FIX
+-- AUTO SELECT MARINES - NO MAIN
 --========================================================
 
 task.spawn(function()
@@ -760,72 +760,56 @@ task.spawn(function()
 	local Player = Players.LocalPlayer
 	local PlayerGui = Player:WaitForChild("PlayerGui")
 
-	local function SetHubStatus(text)
+	local function SetStatus(text)
 		if _G.HoaiHubSetStatus then
 			_G.HoaiHubSetStatus(text)
-		else
-			print("[HOAI HUB] " .. text)
 		end
 	end
 
-	SetHubStatus("Searching team screen...")
+	SetStatus("Searching team screen...")
 
-	local Main
-	local StartTime = os.clock()
+	local ChooseTeam
+	local startTime = os.clock()
 
-	-- Tìm Main của game, bỏ qua Main trong HOÀI HUB
-	while not Main and os.clock() - StartTime < 60 do
+	-- Tìm ChooseTeam ở mọi nơi trong PlayerGui
+	while not ChooseTeam and os.clock() - startTime < 60 do
 
 		for _, obj in ipairs(PlayerGui:GetDescendants()) do
 
-			if obj:IsA("ScreenGui")
-				and obj.Name ~= "HoaiHub" then
-
-				local found = obj:FindFirstChild("Main")
-
-				if found then
-					Main = found
-					break
-				end
+			if obj.Name == "ChooseTeam" then
+				ChooseTeam = obj
+				break
 			end
+
 		end
 
-		if not Main then
+		if not ChooseTeam then
 			task.wait(0.2)
 		end
 	end
 
-	if not Main then
-		SetHubStatus("Team UI not found")
-		warn("HOAI HUB: Game team UI not found")
-		return
-	end
-
-	SetHubStatus("Team UI found")
-	task.wait(0.5)
-
-	-- Tìm ChooseTeam bên trong Main
-	local ChooseTeam = Main:FindFirstChild("ChooseTeam", true)
-
 	if not ChooseTeam then
-		SetHubStatus("ChooseTeam not found")
+		SetStatus("ChooseTeam not found")
 		warn("HOAI HUB: ChooseTeam not found")
 		return
 	end
 
-	SetHubStatus("Choosing Marines...")
-	task.wait(0.5)
+	SetStatus("ChooseTeam found")
+	task.wait(0.3)
 
-	-- Tìm Marines
+	-- Tìm Marines ở bên trong ChooseTeam
 	local Marines = ChooseTeam:FindFirstChild("Marines", true)
 
 	if not Marines then
-		SetHubStatus("Marines not found")
+		SetStatus("Marines not found")
 		warn("HOAI HUB: Marines not found")
 		return
 	end
 
-	-- Tìm button nằm trong ô Marines
+	SetStatus("Marines found")
+	task.wait(0.3)
+
+	-- Tìm button trong Marines
 	local Button
 
 	for _, obj in ipairs(Marines:GetDescendants()) do
@@ -836,21 +820,22 @@ task.spawn(function()
 	end
 
 	if not Button then
-		SetHubStatus("Marine button not found")
+		SetStatus("Marine button not found")
 		warn("HOAI HUB: Marine button not found")
 		return
 	end
 
-	SetHubStatus("Selecting Marines...")
+	SetStatus("Selecting Marines...")
 	task.wait(0.3)
 
+	-- Activate
 	pcall(function()
 		Button:Activate()
 	end)
 
 	task.wait(1)
 
-	SetHubStatus("Marines Selected")
+	SetStatus("Marines Selected")
 
 	print("HOAI HUB: Marines selected")
 
