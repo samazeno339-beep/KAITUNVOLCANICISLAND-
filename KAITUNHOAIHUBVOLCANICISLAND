@@ -578,3 +578,124 @@ Main.Visible = true
 Status.Visible = true
 
 print("HOÀI HUB - UI Loaded")
+--// HOÀI HUB - FULL LOW GRAPHICS
+--// Biến toàn bộ map thành kiểu "cục nhựa"
+--// Tắt bóng + texture + effect để giảm render
+--// Client-side
+
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+--==================================================
+-- LIGHTING
+--==================================================
+
+pcall(function()
+	Lighting.GlobalShadows = false
+	Lighting.EnvironmentDiffuseScale = 0
+	Lighting.EnvironmentSpecularScale = 0
+	Lighting.Brightness = 1
+	Lighting.FogEnd = 100000
+end)
+
+--==================================================
+-- XÓA POST EFFECT
+--==================================================
+
+local function RemoveLightingEffect(obj)
+	if obj:IsA("BloomEffect")
+		or obj:IsA("BlurEffect")
+		or obj:IsA("ColorCorrectionEffect")
+		or obj:IsA("DepthOfFieldEffect")
+		or obj:IsA("SunRaysEffect") then
+
+		pcall(function()
+			obj:Destroy()
+		end)
+
+		return true
+	end
+
+	return false
+end
+
+for _, obj in ipairs(Lighting:GetChildren()) do
+	RemoveLightingEffect(obj)
+end
+
+Lighting.ChildAdded:Connect(function(obj)
+	task.defer(function()
+		if obj.Parent then
+			RemoveLightingEffect(obj)
+		end
+	end)
+end)
+
+--==================================================
+-- LOW GRAPHICS
+--==================================================
+
+local function OptimizeObject(obj)
+
+	-- Làm Part / MeshPart thành SmoothPlastic
+	if obj:IsA("BasePart") then
+		pcall(function()
+			obj.Material = Enum.Material.SmoothPlastic
+			obj.CastShadow = false
+			obj.Reflectance = 0
+		end)
+	end
+
+	-- Ẩn texture / decal
+	if obj:IsA("Texture") or obj:IsA("Decal") then
+		pcall(function()
+			obj.Transparency = 1
+		end)
+	end
+
+	-- Xóa hiệu ứng
+	if obj:IsA("ParticleEmitter")
+		or obj:IsA("Trail")
+		or obj:IsA("Beam")
+		or obj:IsA("Smoke")
+		or obj:IsA("Fire")
+		or obj:IsA("Sparkles")
+		or obj:IsA("Highlight") then
+
+		pcall(function()
+			obj:Destroy()
+		end)
+
+		return
+	end
+end
+
+--==================================================
+-- ÁP DỤNG TOÀN BỘ MAP
+--==================================================
+
+for _, obj in ipairs(Workspace:GetDescendants()) do
+	OptimizeObject(obj)
+end
+
+--==================================================
+-- OBJECT MỚI CŨNG TỰ TỐI ƯU
+--==================================================
+
+Workspace.DescendantAdded:Connect(function(obj)
+	task.defer(function()
+		if obj.Parent then
+			OptimizeObject(obj)
+		end
+	end)
+end)
+
+--==================================================
+-- GIẢM QUALITY CLIENT
+--==================================================
+
+pcall(function()
+	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+end)
+
+print("HOÀI HUB: FULL LOW GRAPHICS ACTIVE")
