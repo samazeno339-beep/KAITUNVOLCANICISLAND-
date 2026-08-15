@@ -1,957 +1,260 @@
--- Kaitun HoaiHub volcanic island - CHECKER ONLY
--- UI Purple/Pink | Images: 111921165456492
--- Không tự teleport / farm / điều khiển nhân vật
+--//================================================
+--// HOÀI HUB
+--// Kaitun Volcanic Island A-Z
+--// UI ONLY
+--//================================================
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local ContentProvider = game:GetService("ContentProvider")
+local TweenService = game:GetService("TweenService")
 
 local Player = Players.LocalPlayer
-if not Player then return end
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local CFG = {
-    Name = "Kaitun HoaiHub volcanic island",
-    ShortName = "Kaitun HoaiHub",
-    Subtitle = "KAITUN ACCOUNT DASHBOARD",
-    Images = "rbxassetid://111921165456492",
+-- Xóa UI cũ nếu có
+local old = PlayerGui:FindFirstChild("HoaiHub")
+if old then
+	old:Destroy()
+end
 
-    WindowWidth = 650,
-    WindowHeight = 405,
+--================================================
+-- CONFIG
+--================================================
 
-    Accent = Color3.fromRGB(196,132,252),
-    AccentLight = Color3.fromRGB(235,184,255),
-    Background = Color3.fromRGB(11,9,17),
-    Card = Color3.fromRGB(27,21,39),
-    Card2 = Color3.fromRGB(32,24,46),
-    Text = Color3.fromRGB(247,242,252),
-    SubText = Color3.fromRGB(171,160,184),
-    Success = Color3.fromRGB(100,235,140),
-    Danger = Color3.fromRGB(255,95,115),
-    Muted = Color3.fromRGB(103,94,114),
+local CONFIG = {
+	Title = "HOÀI HUB",
+	Subtitle = "Kaitun volcanic island A-Z",
+	Logo = "rbxassetid://82514517939235",
+
+	Accent = Color3.fromRGB(165, 70, 255),
+	AccentLight = Color3.fromRGB(205, 140, 255),
+
+	Background = Color3.fromRGB(13, 10, 18),
+	ButtonOff = Color3.fromRGB(48, 24, 66),
+	ButtonOn = Color3.fromRGB(105, 42, 155),
 }
 
-local old = PlayerGui:FindFirstChild("HoaiHub_Kaitun_UI")
-if old then old:Destroy() end
+--================================================
+-- SCREEN GUI
+--================================================
 
-local function New(className, props)
-    local o = Instance.new(className)
-    for k,v in pairs(props or {}) do o[k] = v end
-    return o
-end
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HoaiHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = PlayerGui
 
-local function Corner(p, r)
-    local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0,r or 14)
-    c.Parent = p
-end
+--================================================
+-- MAIN
+--================================================
 
-local function Stroke(p, color, thickness, transparency)
-    local s = Instance.new("UIStroke")
-    s.Color = color
-    s.Thickness = thickness or 1
-    s.Transparency = transparency or 0
-    s.Parent = p
-end
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(320, 175)
+Main.Position = UDim2.new(0.5, -160, 0.5, -87)
+Main.BackgroundColor3 = CONFIG.Background
+Main.BackgroundTransparency = 0.03
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
 
-local ScreenGui = New("ScreenGui", {
-    Name="HoaiHub_Kaitun_UI", Parent=PlayerGui,
-    ResetOnSpawn=false, IgnoreGuiInset=true,
-    ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
-    DisplayOrder=999999
-})
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 9)
+Corner.Parent = Main
 
-local Main = New("Frame", {
-    Parent=ScreenGui, AnchorPoint=Vector2.new(.5,.5),
-    Position=UDim2.new(.5,0,.5,0),
-    Size=UDim2.fromOffset(CFG.WindowWidth,CFG.WindowHeight),
-    BackgroundColor3=CFG.Background, BorderSizePixel=0, Active=true
-})
-Corner(Main,16); Stroke(Main,CFG.Accent,1.5,.25)
+local Border = Instance.new("UIStroke")
+Border.Color = CONFIG.Accent
+Border.Thickness = 2
+Border.Parent = Main
 
-local Header = New("Frame", {
-    Parent=Main, Size=UDim2.new(1,0,0,72),
-    BackgroundTransparency=1, Active=true
-})
+--================================================
+-- LOGO
+--================================================
 
-local Logo = New("ImageButton", {
-    Parent=Header, Position=UDim2.fromOffset(14,11),
-    Size=UDim2.fromOffset(50,50), BackgroundColor3=CFG.Card2,
-    BorderSizePixel=0, Image=CFG.Logo,
-    ScaleType=Enum.ScaleType.Fit, AutoButtonColor=false
-})
-Corner(Logo,12); Stroke(Logo,CFG.AccentLight,1.2,.2)
+local Logo = Instance.new("ImageLabel")
+Logo.Name = "Logo"
+Logo.BackgroundTransparency = 1
+Logo.Size = UDim2.fromOffset(42, 42)
+Logo.Position = UDim2.new(0, 12, 0, 12)
+Logo.Image = CONFIG.Logo
+Logo.ScaleType = Enum.ScaleType.Fit
+Logo.Parent = Main
 
-New("TextLabel", {
-    Parent=Header, Position=UDim2.fromOffset(76,10),
-    Size=UDim2.new(1,-150,0,27), BackgroundTransparency=1,
-    Text=CFG.Name, TextColor3=CFG.Text,
-    Font=Enum.Font.GothamBold, TextSize=18,
-    TextXAlignment=Enum.TextXAlignment.Left
-})
+--================================================
+-- STATUS
+--================================================
 
-New("TextLabel", {
-    Parent=Header, Position=UDim2.fromOffset(76,38),
-    Size=UDim2.new(1,-150,0,17), BackgroundTransparency=1,
-    Text=CFG.Subtitle, TextColor3=CFG.AccentLight,
-    Font=Enum.Font.GothamMedium, TextSize=9,
-    TextXAlignment=Enum.TextXAlignment.Left
-})
+local Status = Instance.new("TextLabel")
+Status.Name = "Status"
+Status.BackgroundTransparency = 1
+Status.Position = UDim2.new(0, 55, 0, 6)
+Status.Size = UDim2.new(1, -65, 0, 20)
 
-local Minimize = New("TextButton", {
-    Parent=Header, AnchorPoint=Vector2.new(1,.5),
-    Position=UDim2.new(1,-46,.5,0), Size=UDim2.fromOffset(32,30),
-    BackgroundColor3=CFG.Card, BorderSizePixel=0,
-    Text="—", TextColor3=CFG.Text,
-    Font=Enum.Font.GothamBold, TextSize=18, AutoButtonColor=false
-})
-Corner(Minimize,9)
+Status.Font = Enum.Font.GothamMedium
+Status.Text = "STATUS: Waiting..."
+Status.TextColor3 = CONFIG.AccentLight
+Status.TextSize = 11
+Status.TextXAlignment = Enum.TextXAlignment.Center
+Status.Parent = Main
 
-local Close = New("TextButton", {
-    Parent=Header, AnchorPoint=Vector2.new(1,.5),
-    Position=UDim2.new(1,-10,.5,0), Size=UDim2.fromOffset(28,28),
-    BackgroundColor3=CFG.Card, BorderSizePixel=0,
-    Text="×", TextColor3=CFG.Text,
-    Font=Enum.Font.GothamBold, TextSize=18, AutoButtonColor=false
-})
-Corner(Close,9)
+--================================================
+-- TITLE
+--================================================
 
-local Body = New("Frame", {
-    Parent=Main, Position=UDim2.fromOffset(12,78),
-    Size=UDim2.new(1,-24,1,-90), BackgroundTransparency=1
-})
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 55, 0, 24)
+Title.Size = UDim2.new(1, -65, 0, 30)
 
-local StatsCard = New("Frame", {
-    Parent=Body, Size=UDim2.new(.49,-6,0,132),
-    BackgroundColor3=CFG.Card, BorderSizePixel=0
-})
-Corner(StatsCard,12); Stroke(StatsCard,CFG.Accent,1,.82)
+Title.Font = Enum.Font.GothamBold
+Title.Text = CONFIG.Title
+Title.TextColor3 = Color3.fromRGB(245, 238, 255)
+Title.TextSize = 19
+Title.TextXAlignment = Enum.TextXAlignment.Center
+Title.Parent = Main
 
-New("TextLabel", {
-    Parent=StatsCard, Position=UDim2.fromOffset(14,11),
-    Size=UDim2.new(1,-28,0,20), BackgroundTransparency=1,
-    Text="ACCOUNT STATUS", TextColor3=CFG.AccentLight,
-    Font=Enum.Font.GothamBold, TextSize=12,
-    TextXAlignment=Enum.TextXAlignment.Left
-})
+--================================================
+-- SUBTITLE
+--================================================
 
-local StatsText = New("TextLabel", {
-    Parent=StatsCard, Position=UDim2.fromOffset(14,38),
-    Size=UDim2.new(1,-28,1,-48), BackgroundTransparency=1,
-    Text="Name: Reading...\nLevel: Reading...\nBeli: Reading...\nFragments: Reading...",
-    TextColor3=CFG.Text, Font=Enum.Font.Gotham, TextSize=11,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    TextYAlignment=Enum.TextYAlignment.Top
-})
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Name = "Subtitle"
+Subtitle.BackgroundTransparency = 1
+Subtitle.Position = UDim2.new(0, 10, 0, 65)
+Subtitle.Size = UDim2.new(1, -20, 0, 24)
 
-local WeaponsCard = New("Frame", {
-    Parent=Body, Position=UDim2.new(.51,6,0,0),
-    Size=UDim2.new(.49,-6,0,132),
-    BackgroundColor3=CFG.Card, BorderSizePixel=0
-})
-Corner(WeaponsCard,12); Stroke(WeaponsCard,CFG.Accent,1,.82)
+Subtitle.Font = Enum.Font.GothamSemibold
+Subtitle.Text = CONFIG.Subtitle
+Subtitle.TextColor3 = Color3.fromRGB(195, 165, 225)
+Subtitle.TextSize = 13
+Subtitle.TextXAlignment = Enum.TextXAlignment.Center
+Subtitle.Parent = Main
 
-New("TextLabel", {
-    Parent=WeaponsCard, Position=UDim2.fromOffset(14,11),
-    Size=UDim2.new(1,-28,0,20), BackgroundTransparency=1,
-    Text="ITEM ACCOUNT", TextColor3=CFG.AccentLight,
-    Font=Enum.Font.GothamBold, TextSize=12,
-    TextXAlignment=Enum.TextXAlignment.Left
-})
+--================================================
+-- KAITUN BUTTON
+--================================================
 
-local WeaponsText = New("TextLabel", {
-    Parent=WeaponsCard, Position=UDim2.fromOffset(14,39),
-    Size=UDim2.new(1,-28,1,-50), BackgroundTransparency=1,
-    Text="Reading items...", TextColor3=CFG.Text,
-    Font=Enum.Font.Gotham, TextSize=10,
-    TextXAlignment=Enum.TextXAlignment.Left,
-    TextYAlignment=Enum.TextYAlignment.Top
-})
+local KaitunButton = Instance.new("TextButton")
+KaitunButton.Name = "KaitunButton"
+KaitunButton.Size = UDim2.fromOffset(250, 43)
+KaitunButton.Position = UDim2.new(0.5, -125, 0, 105)
 
-local ProgressCard = New("Frame", {
-    Parent=Body, Position=UDim2.fromOffset(0,145),
-    Size=UDim2.new(1,0,0,144),
-    BackgroundColor3=CFG.Card, BorderSizePixel=0
-})
-Corner(ProgressCard,12); Stroke(ProgressCard,CFG.Accent,1,.82)
+KaitunButton.BackgroundColor3 = CONFIG.ButtonOff
+KaitunButton.BorderSizePixel = 0
+KaitunButton.AutoButtonColor = false
 
-New("TextLabel", {
-    Parent=ProgressCard, Position=UDim2.fromOffset(14,10),
-    Size=UDim2.new(1,-28,0,20), BackgroundTransparency=1,
-    Text="ACCOUNT PROGRESS", TextColor3=CFG.AccentLight,
-    Font=Enum.Font.GothamBold, TextSize=12,
-    TextXAlignment=Enum.TextXAlignment.Left
-})
+KaitunButton.Font = Enum.Font.GothamBold
+KaitunButton.Text = "KAITUN : OFF"
+KaitunButton.TextColor3 = Color3.fromRGB(225, 210, 240)
+KaitunButton.TextSize = 14
 
-local Rows = {}
+KaitunButton.Parent = Main
 
-local function MakeRow(name,index,detail)
-    local row = New("Frame", {
-        Parent=ProgressCard,
-        Position=UDim2.new((index-1)*.25+.01,index>1 and 3 or 0,0,39),
-        Size=UDim2.new(.25,-7,0,82),
-        BackgroundColor3=CFG.Card2, BorderSizePixel=0
-    })
-    Corner(row,10)
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(0, 7)
+ButtonCorner.Parent = KaitunButton
 
-    local bar=New("Frame",{
-        Parent=row, Position=UDim2.fromOffset(0,0),
-        Size=UDim2.fromOffset(3,82),
-        BackgroundColor3=CFG.Danger, BorderSizePixel=0
-    })
-    Corner(bar,3)
+local ButtonStroke = Instance.new("UIStroke")
+ButtonStroke.Color = CONFIG.Accent
+ButtonStroke.Thickness = 1.5
+ButtonStroke.Parent = KaitunButton
 
-    New("TextLabel",{
-        Parent=row, Position=UDim2.fromOffset(10,8),
-        Size=UDim2.new(1,-20,0,22), BackgroundTransparency=1,
-        Text=name, TextColor3=CFG.Text,
-        Font=Enum.Font.GothamBold, TextSize=10,
-        TextXAlignment=Enum.TextXAlignment.Left
-    })
-
-    local status=New("TextLabel",{
-        Parent=row, Position=UDim2.fromOffset(10,32),
-        Size=UDim2.new(1,-20,0,20), BackgroundTransparency=1,
-        Text="● NOT READ", TextColor3=CFG.Muted,
-        Font=Enum.Font.GothamBold, TextSize=9,
-        TextXAlignment=Enum.TextXAlignment.Left
-    })
-
-    local extra=New("TextLabel",{
-        Parent=row, Position=UDim2.fromOffset(10,53),
-        Size=UDim2.new(1,-20,0,20), BackgroundTransparency=1,
-        Text=detail or "", TextColor3=CFG.SubText,
-        Font=Enum.Font.GothamMedium, TextSize=9,
-        TextXAlignment=Enum.TextXAlignment.Left
-    })
-
-    Rows[name]={Bar=bar,Status=status,Extra=extra}
-end
-
-MakeRow("Dragon Talon",1,"Mastery: --/500")
-MakeRow("Dojo Belt",2,"--/8")
-MakeRow("Dragon Storm",3,"--")
-MakeRow("Dragon Heart",4,"--")
-
-local BottomInfo = New("TextLabel", {
-    Parent=Body, Position=UDim2.fromOffset(0,300),
-    Size=UDim2.new(1,0,0,24), BackgroundTransparency=1,
-    Text="Ping: --    FPS: --    Players: --",
-    TextColor3=CFG.SubText, Font=Enum.Font.GothamMedium,
-    TextSize=10, TextXAlignment=Enum.TextXAlignment.Center
-})
-
-local StatusBar = New("Frame", {
-    Parent=ScreenGui, AnchorPoint=Vector2.new(.5,0),
-    Position=UDim2.new(.5,0,0,26),
-    Size=UDim2.fromOffset(500,78),
-    BackgroundColor3=CFG.Background, BorderSizePixel=0,
-    Visible=false, Active=true
-})
-Corner(StatusBar,14); Stroke(StatusBar,CFG.Accent,1.5,.12)
-
-local StatusLogo=New("ImageButton",{
-    Parent=StatusBar, Position=UDim2.fromOffset(11,11),
-    Size=UDim2.fromOffset(54,54), BackgroundColor3=CFG.Card,
-    BorderSizePixel=0, Image=CFG.Logo,
-    ScaleType=Enum.ScaleType.Fit, AutoButtonColor=false
-})
-Corner(StatusLogo,11)
-
-New("TextLabel",{
-    Parent=StatusBar, Position=UDim2.fromOffset(78,10),
-    Size=UDim2.new(1,-90,0,18), BackgroundTransparency=1,
-    Text=CFG.ShortName.." / KAITUN", TextColor3=CFG.AccentLight,
-    Font=Enum.Font.GothamBold, TextSize=11,
-    TextXAlignment=Enum.TextXAlignment.Left
-})
-
-local StatusText=New("TextLabel",{
-    Parent=StatusBar, Position=UDim2.fromOffset(78,31),
-    Size=UDim2.new(1,-90,0,30), BackgroundTransparency=1,
-    Text="Status : Checking...", TextColor3=CFG.Text,
-    Font=Enum.Font.GothamMedium, TextSize=11,
-    TextWrapped=true, TextXAlignment=Enum.TextXAlignment.Left
-})
-
-local Floating=New("ImageButton",{
-    Parent=ScreenGui, AnchorPoint=Vector2.new(0,.5),
-    Position=UDim2.new(0,18,.5,0), Size=UDim2.fromOffset(58,58),
-    BackgroundColor3=CFG.Card, BorderSizePixel=0,
-    Image=CFG.Logo, ScaleType=Enum.ScaleType.Fit,
-    AutoButtonColor=false, Visible=false, Active=true, ZIndex=50
-})
-Corner(Floating,14); Stroke(Floating,CFG.AccentLight,2,.08)
-
-local function SetOpen(state)
-    Main.Visible=state
-    StatusBar.Visible=not state
-    Floating.Visible=not state
-end
-
-Minimize.MouseButton1Click:Connect(function() SetOpen(false) end)
-Close.MouseButton1Click:Connect(function() SetOpen(false) end)
-Logo.MouseButton1Click:Connect(function() SetOpen(false) end)
-StatusLogo.MouseButton1Click:Connect(function() SetOpen(true) end)
-Floating.MouseButton1Click:Connect(function() SetOpen(true) end)
-
--- Drag
-local dragging=false
-local dragStart
-local startPos
-
-Header.InputBegan:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.MouseButton1
-    or input.UserInputType==Enum.UserInputType.Touch then
-        dragging=true
-        dragStart=input.Position
-        startPos=Main.Position
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if not dragging then return end
-    if input.UserInputType~=Enum.UserInputType.MouseMovement
-    and input.UserInputType~=Enum.UserInputType.Touch then return end
-    local d=input.Position-dragStart
-    Main.Position=UDim2.new(startPos.X.Scale,startPos.X.Offset+d.X,startPos.Y.Scale,startPos.Y.Offset+d.Y)
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType==Enum.UserInputType.MouseButton1
-    or input.UserInputType==Enum.UserInputType.Touch then
-        dragging=false
-    end
-end)
-
-
---========================================================--
--- KAITUN HOAIHUB - COMBINED CHECKER + AUTO FLY
--- Check interval: 0.5 second
---
--- UI:
---   * Existing dashboard preserved
---   * Images = 111921165456492
---
--- Checker:
---   * Immediate first check
---   * Refresh every 0.5 second
---   * Account Status: Name / Level / Beli / Fragments
---   * Account Inventory: account-level data only
---   * Dragon Talon: state + Mastery
---   * Dojo Belt: progress / 8
---   * Dragon Storm / Dragon Heart
---
--- AutoFly:
---   * Finds UZOTH
---   * Flies to target (not direct teleport)
---   * Speed 30
---   * Stops at MaxActivationDistance - 1
---   * Client no-clip while flying
---   * Restores collision after stopping
---
--- This combined file is intended for a game you control in
--- Roblox Studio. It does not claim unsupported server APIs
--- are guaranteed to exist.
---========================================================--
-
-local CHECK_INTERVAL = 0.5
-
---========================================================--
--- SMALL UI HELPERS
---========================================================--
-
-local function SetProgress(name, state, extra)
-    local row = ProgressRows and ProgressRows[name]
-    if not row then
-        return
-    end
-
-    row.Extra = row.Extra or row.Detail
-
-    if state == true then
-        row.Status.Text = "●  COMPLETE"
-        row.Status.TextColor3 = CFG.Success
-        row.Bar.BackgroundColor3 = CFG.Success
-
-    elseif state == false then
-        row.Status.Text = "●  INCOMPLETE"
-        row.Status.TextColor3 = CFG.Danger
-        row.Bar.BackgroundColor3 = CFG.Danger
-
-    else
-        row.Status.Text = "●  NOT READ"
-        row.Status.TextColor3 = CFG.Muted
-        row.Bar.BackgroundColor3 = CFG.Muted
-    end
-
-    if row.Extra then
-        row.Extra.Text = extra or ""
-    end
-end
+--================================================
+-- STATUS FUNCTION
+--================================================
 
 local function SetStatus(text)
-    if StatusText then
-        StatusText.Text = "Status : " .. tostring(text)
-    end
+	Status.Text = "STATUS: " .. tostring(text)
 end
 
---========================================================--
--- SAFE REMOTE HELPERS
---========================================================--
+-- Để sau này dùng từ các chức năng Kaitun
+_G.HoaiHubSetStatus = SetStatus
 
-local function FindCommF()
-    local rep = game:GetService("ReplicatedStorage")
-    local remotes = rep:FindFirstChild("Remotes")
-    local comm = remotes and remotes:FindFirstChild("CommF_")
+--================================================
+-- KAITUN TOGGLE
+--================================================
 
-    if comm and comm:IsA("RemoteFunction") then
-        return comm
-    end
+local KaitunEnabled = false
 
-    return nil
+local function UpdateKaitunButton()
+	if KaitunEnabled then
+
+		KaitunButton.Text = "KAITUN : ON"
+		KaitunButton.BackgroundColor3 = CONFIG.ButtonOn
+		KaitunButton.TextColor3 = Color3.fromRGB(255, 245, 255)
+
+	else
+
+		KaitunButton.Text = "KAITUN : OFF"
+		KaitunButton.BackgroundColor3 = CONFIG.ButtonOff
+		KaitunButton.TextColor3 = Color3.fromRGB(225, 210, 240)
+
+	end
 end
 
-local function SafeInvoke(comm, command)
-    if not comm then
-        return nil
-    end
+KaitunButton.MouseButton1Click:Connect(function()
 
-    local ok, result = pcall(function()
-        return comm:InvokeServer(command)
-    end)
+	KaitunEnabled = not KaitunEnabled
 
-    if ok then
-        return result
-    end
+	UpdateKaitunButton()
 
-    return nil
-end
+	if KaitunEnabled then
+		SetStatus("Kaitun Enabled")
+	else
+		SetStatus("Kaitun Disabled")
+	end
 
-local function ReadNumber(tbl, names)
-    if type(tbl) ~= "table" then
-        return nil
-    end
-
-    for _, name in ipairs(names) do
-        local value = tbl[name]
-
-        if type(value) == "number" then
-            return value
-        end
-
-        if type(value) == "string" then
-            local number = tonumber(value)
-            if number then
-                return number
-            end
-        end
-    end
-
-    return nil
-end
-
---========================================================--
--- ACCOUNT STATUS
---========================================================--
-
-local function ScanAccountStatus()
-    local level, beli, fragments
-
-    -- Prefer client-visible leaderstats/values.
-    local containers = {
-        Player,
-        Player:FindFirstChild("leaderstats"),
-        Player:FindFirstChild("Data"),
-    }
-
-    local function readNames(names)
-        for _, container in ipairs(containers) do
-            if container then
-                for _, name in ipairs(names) do
-                    local obj = container:FindFirstChild(name, true)
-                    if obj and obj:IsA("ValueBase") then
-                        local ok, value = pcall(function()
-                            return obj.Value
-                        end)
-
-                        if ok then
-                            return value
-                        end
-                    end
-                end
-            end
-        end
-
-        for _, name in ipairs(names) do
-            local attr = Player:GetAttribute(name)
-            if attr ~= nil then
-                return attr
-            end
-        end
-
-        return nil
-    end
-
-    level = readNames({"Level", "Lv", "LevelData"})
-    beli = readNames({"Beli", "Money", "BeliCount"})
-    fragments = readNames({"Fragments", "Fragment"})
-
-    StatsText.Text =
-        "Name: " .. Player.Name ..
-        "\nLevel: " .. tostring(level or "NOT READ") ..
-        "\nBeli: " .. tostring(beli or "NOT READ") ..
-        "\nFragments: " .. tostring(fragments or "NOT READ")
-end
-
---========================================================--
---========================================================--
--- ACCOUNT INVENTORY
--- Hiển thị inventory tài khoản, không lấy món đang cầm làm
--- toàn bộ inventory.
---========================================================--
-
-local function GetAccountInventory()
-    local comm = FindCommF()
-    if not comm then
-        return nil
-    end
-
-    -- Chỉ coi kết quả là inventory khi server thực sự trả table.
-    local commands = {
-        "getInventory",
-        "GetInventory",
-        "Inventory",
-    }
-
-    for _, command in ipairs(commands) do
-        local result = SafeInvoke(comm, command)
-
-        if type(result) == "table" then
-            return result
-        end
-    end
-
-    return nil
-end
-
-local function ParseAccountInventory(data)
-    if type(data) ~= "table" then
-        return nil
-    end
-
-    local items = {}
-    local seen = {}
-
-    local function add(name)
-        if type(name) ~= "string" or name == "" then
-            return
-        end
-
-        local key = name:lower()
-
-        if not seen[key] then
-            seen[key] = true
-            table.insert(items, name)
-        end
-    end
-
-    local function scan(tbl, parentKey)
-        if type(tbl) ~= "table" then
-            return
-        end
-
-        -- Common item shapes.
-        local itemName =
-            tbl.Name or
-            tbl.name or
-            tbl.ItemName or
-            tbl.itemName or
-            tbl.DisplayName or
-            tbl.displayName
-
-        if type(itemName) == "string" then
-            add(itemName)
-        end
-
-        -- Map-style inventories:
-        -- ["Saber"] = true
-        -- ["Bisento"] = 1
-        for key, value in pairs(tbl) do
-            if type(key) == "string" then
-                if type(value) == "boolean" and value then
-                    add(key)
-                elseif type(value) == "number" and value > 0 then
-                    add(key)
-                elseif type(value) == "table" then
-                    scan(value, key)
-                end
-            elseif type(value) == "table" then
-                scan(value, parentKey)
-            end
-        end
-    end
-
-    scan(data, "inventory")
-
-    table.sort(items, function(a, b)
-        return a:lower() < b:lower()
-    end)
-
-    return items
-end
-
-local function ScanInventory()
-    local inventory = GetAccountInventory()
-    local items = ParseAccountInventory(inventory)
-
-    if items == nil then
-        WeaponsText.Text =
-            "Inventory: NOT READ\n" ..
-            "Account inventory data is not exposed."
-        return
-    end
-
-    if #items == 0 then
-        WeaponsText.Text =
-            "Inventory: READ (0)\n" ..
-            "No inventory items returned."
-        return
-    end
-
-    WeaponsText.Text =
-        "Inventory: READ (" .. tostring(#items) .. ")\n" ..
-        table.concat(items, "\n")
-end
-
---========================================================--
--- TARGET CHECKS
---========================================================--
-
-local function ScanProgress()
-    local comm = FindCommF()
-
-    local styles = SafeInvoke(comm, "getStyles")
-    local gameData = SafeInvoke(comm, "getGameData")
-    local inventory = SafeInvoke(comm, "getInventory")
-
-    -- Dragon Talon
-    local owned
-    local mastery
-
-    if type(styles) == "table" then
-        for key, value in pairs(styles) do
-            if type(value) == "table" then
-                local name = value.Name or value.name or key
-
-                if tostring(name):lower() == "dragon talon" then
-                    local flag =
-                        value.Owned or
-                        value.owned or
-                        value.IsUnlocked or
-                        value.isUnlocked
-
-                    if type(flag) == "boolean" then
-                        owned = flag
-                    end
-
-                    mastery = ReadNumber(value, {"Mastery", "mastery"})
-                end
-            end
-        end
-    end
-
-    SetProgress(
-        "Dragon Talon",
-        owned,
-        "Mastery: " .. (mastery and (tostring(mastery) .. "/500") or "--/500")
-    )
-
-    -- Dojo Belt
-    local dojo
-
-    if type(gameData) == "table" then
-        dojo = ReadNumber(
-            gameData,
-            {"DojoProgress", "DracoBeltProgress", "BeltProgress"}
-        )
-    end
-
-    if dojo ~= nil and dojo >= 0 and dojo <= 8 then
-        SetProgress("Dojo Belt", dojo >= 8, tostring(dojo) .. "/8")
-    else
-        SetProgress("Dojo Belt", nil, "--/8")
-    end
-
-    -- Dragon Storm / Dragon Heart
-    local storm
-    local heart
-
-    if type(inventory) == "table" then
-        for key, value in pairs(inventory) do
-            local name
-
-            if type(value) == "table" then
-                name = value.Name or value.name
-            end
-
-            if not name and type(key) == "string" then
-                name = key
-            end
-
-            if name then
-                local low = tostring(name):lower()
-
-                if low == "dragon storm" then
-                    storm = true
-                elseif low == "dragon heart" then
-                    heart = true
-                end
-            end
-        end
-    end
-
-    SetProgress("Dragon Storm", storm == true, storm and "FOUND" or "--")
-    SetProgress("Dragon Heart", heart == true, heart and "FOUND" or "--")
-end
-
---========================================================--
--- AUTO FLY TO UZOTH
---========================================================--
-
-local AutoFly = {
-    Flying = false,
-    Target = nil,
-    Connection = nil,
-    NoClipConnection = nil,
-    CollisionCache = {},
-}
-
-local FLY_SPEED = 30
-local MIN_STOP_DISTANCE = 2
-local INTERACTION_TIMEOUT = 8
-
-local function GetCharacter()
-    local character = Player.Character
-    if not character then
-        return nil
-    end
-
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    local root = character:FindFirstChild("HumanoidRootPart")
-
-    if not humanoid or not root then
-        return nil
-    end
-
-    return character, humanoid, root
-end
-
-local function FindUzoth()
-    local exact = workspace:FindFirstChild("UZOTH", true)
-
-    if exact and (exact:IsA("Model") or exact:IsA("BasePart")) then
-        return exact
-    end
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name:lower() == "uzoth"
-            and (obj:IsA("Model") or obj:IsA("BasePart")) then
-            return obj
-        end
-    end
-
-    return nil
-end
-
-local function GetTargetRoot(target)
-    if not target then
-        return nil
-    end
-
-    if target:IsA("BasePart") then
-        return target
-    end
-
-    if target:IsA("Model") then
-        return target:FindFirstChild("HumanoidRootPart")
-            or target.PrimaryPart
-            or target:FindFirstChildWhichIsA("BasePart")
-    end
-
-    return nil
-end
-
-local function FindPrompt(target)
-    if not target then
-        return nil
-    end
-
-    for _, obj in ipairs(target:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and obj.Enabled then
-            return obj
-        end
-    end
-
-    return nil
-end
-
-local function StopAutoFly()
-    AutoFly.Flying = false
-    AutoFly.Target = nil
-
-    if AutoFly.Connection then
-        AutoFly.Connection:Disconnect()
-        AutoFly.Connection = nil
-    end
-
-    if AutoFly.NoClipConnection then
-        AutoFly.NoClipConnection:Disconnect()
-        AutoFly.NoClipConnection = nil
-    end
-
-    for part, original in pairs(AutoFly.CollisionCache) do
-        if part and part.Parent and part:IsA("BasePart") then
-            part.CanCollide = original
-        end
-    end
-
-    AutoFly.CollisionCache = {}
-
-    local _, humanoid = GetCharacter()
-    if humanoid then
-        humanoid.AutoRotate = true
-    end
-end
-
-local function EnableNoClip(character)
-    AutoFly.CollisionCache = {}
-
-    for _, obj in ipairs(character:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            AutoFly.CollisionCache[obj] = obj.CanCollide
-            obj.CanCollide = false
-        end
-    end
-
-    AutoFly.NoClipConnection = character.DescendantAdded:Connect(function(obj)
-        if AutoFly.Flying and obj:IsA("BasePart") then
-            AutoFly.CollisionCache[obj] = obj.CanCollide
-            obj.CanCollide = false
-        end
-    end)
-end
-
-local function FlyToUzoth()
-    local target = FindUzoth()
-    if not target then
-        SetStatus("UZOTH not found")
-        return false
-    end
-
-    local targetRoot = GetTargetRoot(target)
-    if not targetRoot then
-        SetStatus("UZOTH root not found")
-        return false
-    end
-
-    local prompt = FindPrompt(target)
-    local stopDistance = prompt
-        and math.max(prompt.MaxActivationDistance - 1, MIN_STOP_DISTANCE)
-        or 6
-
-    local character, humanoid, root = GetCharacter()
-    if not character or not humanoid or not root then
-        SetStatus("Character not ready")
-        return false
-    end
-
-    StopAutoFly()
-
-    AutoFly.Flying = true
-    AutoFly.Target = target
-
-    humanoid.AutoRotate = false
-    EnableNoClip(character)
-
-    local startedAt = os.clock()
-
-    AutoFly.Connection = RunService.Heartbeat:Connect(function()
-        if not AutoFly.Flying then
-            return
-        end
-
-        local _, currentHumanoid, currentRoot = GetCharacter()
-
-        if not currentHumanoid or not currentRoot then
-            StopAutoFly()
-            return
-        end
-
-        targetRoot = GetTargetRoot(target)
-
-        if not targetRoot or not targetRoot.Parent then
-            StopAutoFly()
-            SetStatus("UZOTH target lost")
-            return
-        end
-
-        local offset = targetRoot.Position - currentRoot.Position
-        local distance = offset.Magnitude
-
-        if distance <= stopDistance then
-            StopAutoFly()
-            SetStatus("At UZOTH")
-            return
-        end
-
-        local direction = offset.Unit
-
-        currentRoot.AssemblyLinearVelocity = direction * FLY_SPEED
-        currentRoot.CFrame = CFrame.lookAt(
-            currentRoot.Position,
-            targetRoot.Position
-        )
-
-        if os.clock() - startedAt >= INTERACTION_TIMEOUT then
-            StopAutoFly()
-            SetStatus("Fly timeout")
-        end
-    end)
-
-    return true
-end
-
-_G.KaitunAutoFlyUzoth = {
-    FlyToUzoth = FlyToUzoth,
-    StopFly = StopAutoFly,
-    FindUzoth = FindUzoth,
-    IsFlying = function()
-        return AutoFly.Flying
-    end,
-}
-
---========================================================--
--- CHECK LOOP
---========================================================--
-
-task.spawn(function()
-    while ScreenGui.Parent do
-        local ok = pcall(function()
-            ScanAccountStatus()
-            ScanInventory()
-            ScanProgress()
-        end)
-
-        if not ok then
-            SetStatus("Check error - retrying")
-        else
-            SetStatus("Check complete • 0.5s")
-        end
-
-        task.wait(CHECK_INTERVAL)
-    end
 end)
 
-print("Kaitun HoaiHub combined checker + AutoFly loaded.")
+--================================================
+-- PURPLE GLOW
+--================================================
+
+task.spawn(function()
+
+	while Main.Parent do
+
+		local t1 = TweenService:Create(
+			Border,
+			TweenInfo.new(
+				1.2,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+			{
+				Thickness = 3,
+				Color = CONFIG.AccentLight
+			}
+		)
+
+		t1:Play()
+		t1.Completed:Wait()
+
+		local t2 = TweenService:Create(
+			Border,
+			TweenInfo.new(
+				1.2,
+				Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut
+			),
+			{
+				Thickness = 2,
+				Color = CONFIG.Accent
+			}
+		)
+
+		t2:Play()
+		t2.Completed:Wait()
+
+	end
+
+end)
+
+--================================================
+-- START
+--================================================
+
+UpdateKaitunButton()
+SetStatus("Waiting...")
+
+print("HOÀI HUB loaded")
