@@ -762,87 +762,88 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 
 task.spawn(function()
 
-	-- Chờ Main
-	local Main = PlayerGui:WaitForChild("Main", 60)
+	-- Chờ Main xuất hiện
+	local Main
 
-	if not Main then
-		warn("HOÀI HUB: Main not found")
-		return
-	end
+	repeat
+		Main = PlayerGui:FindFirstChild("Main")
+		task.wait(0.2)
+	until Main
+
+	print("HOÀI HUB: Main found")
 
 	-- Chờ ChooseTeam
-	local ChooseTeam = Main:WaitForChild("ChooseTeam", 60)
+	local ChooseTeam
 
-	if not ChooseTeam then
-		warn("HOÀI HUB: ChooseTeam not found")
-		return
-	end
+	repeat
+		ChooseTeam = Main:FindFirstChild("ChooseTeam")
+		task.wait(0.2)
+	until ChooseTeam
 
-	-- Chờ màn chọn team thật sự hiện
+	print("HOÀI HUB: ChooseTeam found")
+
+	-- Chờ màn chọn phe hiện
 	repeat
 		task.wait(0.1)
 	until ChooseTeam.Visible == true
 
-	-- Chờ đúng nút Marines
-	local Container = ChooseTeam:WaitForChild("Container", 30)
+	print("HOÀI HUB: ChooseTeam visible")
+
+	-- Lấy đúng đường dẫn Marines
+	local Container = ChooseTeam:FindFirstChild("Container")
 
 	if not Container then
 		warn("HOÀI HUB: Container not found")
 		return
 	end
 
-	local Marines = Container:WaitForChild("Marines", 30)
+	local Marines = Container:FindFirstChild("Marines")
 
 	if not Marines then
 		warn("HOÀI HUB: Marines not found")
 		return
 	end
 
-	local Frame = Marines:WaitForChild("Frame", 30)
+	local Frame = Marines:FindFirstChild("Frame")
 
 	if not Frame then
 		warn("HOÀI HUB: Marines Frame not found")
 		return
 	end
 
-	local ViewportFrame = Frame:WaitForChild("ViewportFrame", 30)
+	local ViewportFrame = Frame:FindFirstChild("ViewportFrame")
 
 	if not ViewportFrame then
-		warn("HOÀI HUB: Marines ViewportFrame not found")
+		warn("HOÀI HUB: ViewportFrame not found")
 		return
 	end
 
-	local Button = ViewportFrame:WaitForChild("TextButton", 30)
+	local Button = ViewportFrame:FindFirstChild("TextButton")
 
 	if not Button then
 		warn("HOÀI HUB: Marines TextButton not found")
 		return
 	end
 
+	print("HOÀI HUB: Marines button found")
+
 	--====================================================
-	-- KÍCH HOẠT Ô MARINES
+	-- BIẾN NÚT MARINES THÀNH VÙNG CLICK LỚN
 	--====================================================
 
-	pcall(function()
-		Button.Size = UDim2.new(1, 0, 1, 0)
-		Button.Position = UDim2.new(0, 0, 0, 0)
-	end)
-
-	task.wait(0.3)
-
-	pcall(function()
-		Button:Activate()
-	end)
-
-	-- Fallback giống các script public đang dùng:
-	-- đưa vùng click phủ lên rồi giả lập click.
 	pcall(function()
 		Button.Size = UDim2.new(0, 10000, 0, 10000)
 		Button.Position = UDim2.new(-4, 0, -5, 0)
 		Button.BackgroundTransparency = 1
+		Button.Visible = true
+		Button.Active = true
 	end)
 
-	task.wait(0.3)
+	task.wait(0.5)
+
+	--====================================================
+	-- GIẢ LẬP CLICK
+	--====================================================
 
 	pcall(function()
 		VirtualUser:Button1Down(Vector2.new(99, 99))
@@ -850,10 +851,16 @@ task.spawn(function()
 		VirtualUser:Button1Up(Vector2.new(99, 99))
 	end)
 
+	task.wait(1)
+
+	--====================================================
+	-- STATUS
+	--====================================================
+
 	if _G.HoaiHubSetStatus then
 		_G.HoaiHubSetStatus("Marines Selected")
 	end
 
-	print("HOÀI HUB: Marines selected")
+	print("HOÀI HUB: Marines selection sent")
 
 end)
