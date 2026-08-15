@@ -1,7 +1,7 @@
 --//========================================================
 --// HOÀI HUB
 --// Kaitun volcanic island A-Z
---// Purple UI + Extreme Safe Fix Lag
+--// UI + SAFE FIX LAG + AUTO MARINES
 --//========================================================
 
 local Players = game:GetService("Players")
@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -78,18 +79,23 @@ local Status = Instance.new("TextLabel")
 Status.Name = "Status"
 
 Status.Size = UDim2.fromOffset(310, 24)
+
 Status.Position = CONFIG.StatusPosition
 
 Status.BackgroundTransparency = 1
 
 Status.Font = Enum.Font.GothamMedium
+
 Status.Text = "STATUS: Waiting..."
 
 Status.TextColor3 = CONFIG.AccentLight
+
 Status.TextSize = 12
+
 Status.TextXAlignment = Enum.TextXAlignment.Center
 
 Status.ZIndex = 50
+
 Status.Parent = ScreenGui
 
 local function SetStatus(Text)
@@ -180,6 +186,7 @@ Title.TextColor3 = Color3.fromRGB(
 )
 
 Title.TextSize = 19
+
 Title.TextXAlignment = Enum.TextXAlignment.Center
 
 Title.ZIndex = 11
@@ -216,6 +223,7 @@ Subtitle.TextColor3 = Color3.fromRGB(
 )
 
 Subtitle.TextSize = 13
+
 Subtitle.TextXAlignment = Enum.TextXAlignment.Center
 
 Subtitle.ZIndex = 11
@@ -229,7 +237,10 @@ local FloatButton = Instance.new("ImageButton")
 
 FloatButton.Name = "FloatingLogo"
 
-FloatButton.Size = UDim2.fromOffset(55, 55)
+FloatButton.Size = UDim2.fromOffset(
+	55,
+	55
+)
 
 FloatButton.Position = CONFIG.FloatingPosition
 
@@ -239,6 +250,7 @@ FloatButton.BackgroundTransparency = 0.02
 FloatButton.BorderSizePixel = 0
 
 FloatButton.Image = CONFIG.Logo
+
 FloatButton.ScaleType = Enum.ScaleType.Fit
 
 FloatButton.AutoButtonColor = false
@@ -247,12 +259,19 @@ FloatButton.ZIndex = 100
 FloatButton.Parent = ScreenGui
 
 local FloatCorner = Instance.new("UICorner")
-FloatCorner.CornerRadius = UDim.new(1, 0)
+
+FloatCorner.CornerRadius = UDim.new(
+	1,
+	0
+)
+
 FloatCorner.Parent = FloatButton
 
 local FloatStroke = Instance.new("UIStroke")
+
 FloatStroke.Color = CONFIG.Accent
 FloatStroke.Thickness = 2.5
+
 FloatStroke.Parent = FloatButton
 
 --========================================================
@@ -264,17 +283,23 @@ local MenuVisible = true
 local function ShowMenu()
 
 	MenuVisible = true
+
 	Main.Visible = true
 
-	Main.Size = UDim2.fromOffset(0, 0)
+	Main.Size = UDim2.fromOffset(
+		0,
+		0
+	)
 
 	local Tween = TweenService:Create(
 		Main,
+
 		TweenInfo.new(
 			0.22,
 			Enum.EasingStyle.Back,
 			Enum.EasingDirection.Out
 		),
+
 		{
 			Size = CONFIG.MenuSize
 		}
@@ -289,13 +314,18 @@ local function HideMenu()
 
 	local Tween = TweenService:Create(
 		Main,
+
 		TweenInfo.new(
 			0.16,
 			Enum.EasingStyle.Quad,
 			Enum.EasingDirection.In
 		),
+
 		{
-			Size = UDim2.fromOffset(0, 0)
+			Size = UDim2.fromOffset(
+				0,
+				0
+			)
 		}
 	)
 
@@ -334,6 +364,7 @@ FloatButton.InputBegan:Connect(function(Input)
 		or Input.UserInputType == Enum.UserInputType.Touch then
 
 		Dragging = true
+
 		DragStart = Input.Position
 		StartPosition = FloatButton.Position
 
@@ -371,12 +402,11 @@ UserInputService.InputChanged:Connect(function(Input)
 end)
 
 --========================================================
--- DISABLE VISUAL EFFECT
+-- SAFE EFFECT DISABLE
 --========================================================
 
 local function DisableEffect(Object)
 
-	-- Particle / combat / environment effects
 	if Object:IsA("ParticleEmitter")
 		or Object:IsA("Trail")
 		or Object:IsA("Beam")
@@ -392,7 +422,6 @@ local function DisableEffect(Object)
 		return
 	end
 
-	-- Post-processing
 	if Object:IsA("BloomEffect")
 		or Object:IsA("BlurEffect")
 		or Object:IsA("ColorCorrectionEffect")
@@ -407,7 +436,7 @@ local function DisableEffect(Object)
 end
 
 --========================================================
--- OPTIMIZE PART
+-- PART OPTIMIZATION
 --========================================================
 
 local function OptimizePart(Object)
@@ -418,35 +447,16 @@ local function OptimizePart(Object)
 
 	pcall(function()
 
-		-- Cục nhựa
 		Object.Material = Enum.Material.SmoothPlastic
-
-		-- Tắt bóng
 		Object.CastShadow = false
-
-		-- Tắt phản chiếu
 		Object.Reflectance = 0
 
 	end)
 
-	-- MeshPart
-	if Object:IsA("MeshPart") then
-
-		pcall(function()
-
-			-- Ưu tiên performance
-			Object.RenderFidelity = Enum.RenderFidelity.Performance
-
-			-- Bỏ texture của MeshPart
-			Object.TextureID = ""
-
-		end)
-
-	end
 end
 
 --========================================================
--- HIDE MAP DECAL / TEXTURE
+-- MAP TEXTURE / DECAL
 --========================================================
 
 local function HideMapTexture(Object)
@@ -459,10 +469,11 @@ local function HideMapTexture(Object)
 		end)
 
 	end
+
 end
 
 --========================================================
--- HIDE NPC CLOTHES
+-- NPC CLOTHING
 --========================================================
 
 local function HideNPCClothes(Character)
@@ -477,14 +488,14 @@ local function HideNPCClothes(Character)
 		return
 	end
 
-	-- Không ẩn đồ của chính người chơi
+	-- Không ẩn đồ của chính player
 	if Character == LocalPlayer.Character then
 		return
 	end
 
 	for _, Object in ipairs(Character:GetDescendants()) do
 
-		-- Accessory: tóc, mũ, áo phụ kiện, v.v.
+		-- Accessory
 		if Object:IsA("Accessory") then
 
 			for _, Part in ipairs(Object:GetDescendants()) do
@@ -492,10 +503,8 @@ local function HideNPCClothes(Character)
 				if Part:IsA("BasePart") then
 
 					pcall(function()
-
 						Part.LocalTransparencyModifier = 1
 						Part.CastShadow = false
-
 					end)
 
 				elseif Part:IsA("Texture")
@@ -522,14 +531,14 @@ local function HideNPCClothes(Character)
 				Object.PantsTemplate = ""
 			end)
 
-		-- Shirt graphic
+		-- ShirtGraphic
 		elseif Object:IsA("ShirtGraphic") then
 
 			pcall(function()
 				Object.Graphic = ""
 			end)
 
-		-- Texture/Decal trên NPC
+		-- Texture / Decal
 		elseif Object:IsA("Texture")
 			or Object:IsA("Decal") then
 
@@ -542,7 +551,7 @@ local function HideNPCClothes(Character)
 end
 
 --========================================================
--- PROCESS OBJECT
+-- APPLY OPTIMIZATION
 --========================================================
 
 local function OptimizeObject(Object)
@@ -553,9 +562,7 @@ local function OptimizeObject(Object)
 	end
 
 	DisableEffect(Object)
-
 	OptimizePart(Object)
-
 	HideMapTexture(Object)
 
 end
@@ -567,79 +574,15 @@ end
 pcall(function()
 
 	Lighting.GlobalShadows = false
-
 	Lighting.EnvironmentDiffuseScale = 0
-
 	Lighting.EnvironmentSpecularScale = 0
-
 	Lighting.FogEnd = 100000
 
 end)
 
---========================================================
--- DISABLE EXISTING LIGHTING EFFECT
---========================================================
-
 for _, Object in ipairs(Lighting:GetChildren()) do
 	DisableEffect(Object)
 end
-
---========================================================
--- OPTIMIZE EXISTING WORKSPACE
---========================================================
-
-for _, Object in ipairs(Workspace:GetDescendants()) do
-
-	OptimizeObject(Object)
-
-end
-
---========================================================
--- NPC HIỆN TẠI
---========================================================
-
-for _, Object in ipairs(Workspace:GetDescendants()) do
-
-	if Object:IsA("Model")
-		and Object:FindFirstChildOfClass("Humanoid") then
-
-		HideNPCClothes(Object)
-
-	end
-
-end
-
---========================================================
--- WORKSPACE OBJECT MỚI
---========================================================
-
-Workspace.DescendantAdded:Connect(function(Object)
-
-	task.defer(function()
-
-		if not Object.Parent then
-			return
-		end
-
-		OptimizeObject(Object)
-
-		-- Nếu thuộc NPC thì xử lý cosmetic
-		local Character = Object:FindFirstAncestorOfClass("Model")
-
-		if Character
-			and Character:FindFirstChildOfClass("Humanoid") then
-
-			HideNPCClothes(Character)
-
-		end
-
-	end)
-
-end)
-
---========================================================
--- LIGHTING OBJECT MỚI
---========================================================
 
 Lighting.ChildAdded:Connect(function(Object)
 
@@ -654,44 +597,69 @@ Lighting.ChildAdded:Connect(function(Object)
 end)
 
 --========================================================
--- NPC / CHARACTER RESPAWN
+-- OPTIMIZE EXISTING MAP
+--========================================================
+
+for _, Object in ipairs(Workspace:GetDescendants()) do
+	OptimizeObject(Object)
+end
+
+--========================================================
+-- CURRENT NPC
+--========================================================
+
+for _, Object in ipairs(Workspace:GetDescendants()) do
+
+	if Object:IsA("Model")
+		and Object:FindFirstChildOfClass("Humanoid") then
+
+		HideNPCClothes(Object)
+
+	end
+
+end
+
+--========================================================
+-- NEW WORKSPACE OBJECT
+--========================================================
+
+Workspace.DescendantAdded:Connect(function(Object)
+
+	task.defer(function()
+
+		if not Object.Parent then
+			return
+		end
+
+		OptimizeObject(Object)
+
+		local Character = Object:FindFirstAncestorOfClass("Model")
+
+		if Character
+			and Character:FindFirstChildOfClass("Humanoid")
+			and Character ~= LocalPlayer.Character then
+
+			HideNPCClothes(Character)
+		end
+
+	end)
+
+end)
+
+--========================================================
+-- CHARACTER RESPAWN
 --========================================================
 
 LocalPlayer.CharacterAdded:Connect(function(Character)
 
-	-- Giữ nguyên nhân vật người chơi
 	task.wait(0.2)
 
 	for _, Object in ipairs(Character:GetDescendants()) do
 
 		OptimizePart(Object)
-
 		DisableEffect(Object)
 
 	end
-
-end)
-
--- NPC mới có Humanoid
-Workspace.DescendantAdded:Connect(function(Object)
-
-	if not Object:IsA("Model") then
-		return
-	end
-
-	task.defer(function()
-
-		task.wait(0.1)
-
-		if Object.Parent
-			and Object:FindFirstChildOfClass("Humanoid")
-			and Object ~= LocalPlayer.Character then
-
-			HideNPCClothes(Object)
-
-		end
-
-	end)
 
 end)
 
@@ -707,13 +675,93 @@ pcall(function()
 end)
 
 --========================================================
+-- AUTO SELECT MARINES
+--========================================================
+
+task.spawn(function()
+
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
+	end
+
+	SetStatus("Waiting for Marines...")
+
+	local Remotes = ReplicatedStorage:WaitForChild("Remotes", 30)
+
+	if not Remotes then
+		warn("HOÀI HUB: Remotes not found")
+		SetStatus("Marines Failed")
+		return
+	end
+
+	local CommF_ = Remotes:WaitForChild("CommF_", 30)
+
+	if not CommF_ then
+		warn("HOÀI HUB: CommF_ not found")
+		SetStatus("Marines Failed")
+		return
+	end
+
+	-- Nếu đã có team thì không cần chọn
+	if LocalPlayer.Team then
+
+		if string.lower(LocalPlayer.Team.Name) == "marines" then
+			SetStatus("Marines Selected")
+		else
+			SetStatus("Team Already Selected")
+		end
+
+		return
+	end
+
+	SetStatus("Selecting Marines...")
+
+	local Deadline = os.clock() + 15
+
+	while LocalPlayer.Parent
+		and LocalPlayer.Team == nil
+		and os.clock() < Deadline do
+
+		local Success, Result = pcall(function()
+
+			return CommF_:InvokeServer(
+				"SetTeam",
+				"Marines"
+			)
+
+		end)
+
+		if not Success then
+			warn("HOÀI HUB: SetTeam failed:", Result)
+		end
+
+		task.wait(0.5)
+	end
+
+	if LocalPlayer.Team then
+
+		if string.lower(LocalPlayer.Team.Name) == "marines" then
+			SetStatus("Marines Selected")
+			print("HOÀI HUB: Marines Selected")
+		else
+			SetStatus("Team Already Selected")
+		end
+
+	else
+
+		SetStatus("Marine Select Failed")
+		warn("HOÀI HUB: Could not select Marines")
+
+	end
+
+end)
+
+--========================================================
 -- STATUS
 --========================================================
 
 Status.Visible = true
 Main.Visible = true
-
-SetStatus("Fix Lag: Active")
 
 --========================================================
 -- PURPLE MENU GLOW
@@ -724,6 +772,7 @@ task.spawn(function()
 	while ScreenGui.Parent do
 
 		local A = TweenService:Create(
+
 			MainStroke,
 
 			TweenInfo.new(
@@ -742,6 +791,7 @@ task.spawn(function()
 		A.Completed:Wait()
 
 		local B = TweenService:Create(
+
 			MainStroke,
 
 			TweenInfo.new(
@@ -772,6 +822,7 @@ task.spawn(function()
 	while ScreenGui.Parent do
 
 		local A = TweenService:Create(
+
 			FloatStroke,
 
 			TweenInfo.new(
@@ -790,6 +841,7 @@ task.spawn(function()
 		A.Completed:Wait()
 
 		local B = TweenService:Create(
+
 			FloatStroke,
 
 			TweenInfo.new(
@@ -816,4 +868,5 @@ end)
 --========================================================
 
 print("HOÀI HUB: UI Loaded")
-print("HOÀI HUB: Extreme Safe Fix Lag Active")
+print("HOÀI HUB: Safe Fix Lag Active")
+print("HOÀI HUB: Auto Marines Active")
