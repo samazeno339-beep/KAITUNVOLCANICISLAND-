@@ -779,186 +779,161 @@ print("HOÀI HUB: UI Loaded")
 print("HOÀI HUB: Fix Lag Active")
 print("HOÀI HUB: Auto Marines Active")
 --========================================================
--- HOÀI HUB - INVENTORY STATUS CHECKER
+-- HOÀI HUB - DOJO INVENTORY CHECKER
 -- Check mỗi 0.25 giây
--- Chỉ kiểm tra:
--- 8 Dojo Belts
--- Dragon Storm
--- Dragonheart
 --========================================================
 
 local Players = game:GetService("Players")
-
 local Player = Players.LocalPlayer
-
---========================================================
--- STATUS
---========================================================
-
-local function SetStatus(Text)
-	if _G.HoaiHubSetStatus then
-		_G.HoaiHubSetStatus(Text)
-	end
-end
-
---========================================================
--- 8 DOJO BELTS
---========================================================
 
 local Belts = {
 	{
-		Key = "White Belt",
+		Item = "Dojo Belt (White)",
+		Name = "White Belt",
 		VN = "đai Trắng"
 	},
 
 	{
-		Key = "Yellow Belt",
+		Item = "Dojo Belt (Yellow)",
+		Name = "Yellow Belt",
 		VN = "đai Vàng"
 	},
 
 	{
-		Key = "Orange Belt",
+		Item = "Dojo Belt (Orange)",
+		Name = "Orange Belt",
 		VN = "đai Cam"
 	},
 
 	{
-		Key = "Green Belt",
+		Item = "Dojo Belt (Green)",
+		Name = "Green Belt",
 		VN = "đai Xanh Lá"
 	},
 
 	{
-		Key = "Blue Belt",
+		Item = "Dojo Belt (Blue)",
+		Name = "Blue Belt",
 		VN = "đai Xanh Dương"
 	},
 
 	{
-		Key = "Purple Belt",
+		Item = "Dojo Belt (Purple)",
+		Name = "Purple Belt",
 		VN = "đai Tím"
 	},
 
 	{
-		Key = "Red Belt",
+		Item = "Dojo Belt (Red)",
+		Name = "Red Belt",
 		VN = "đai Đỏ"
 	},
 
 	{
-		Key = "Black Belt",
+		Item = "Dojo Belt (Black)",
+		Name = "Black Belt",
 		VN = "đai Đen"
 	}
 }
 
 --========================================================
--- CHECK INVENTORY
+-- CHECK ITEM
 --========================================================
 
 local function HasItem(ItemName)
 
-	-- Backpack
 	local Backpack = Player:FindFirstChildOfClass("Backpack")
 
-	if Backpack then
-
-		if Backpack:FindFirstChild(ItemName, true) then
-			return true
-		end
-
+	if Backpack and Backpack:FindFirstChild(ItemName, true) then
+		return true
 	end
 
-	-- Character
 	local Character = Player.Character
 
-	if Character then
-
-		if Character:FindFirstChild(ItemName, true) then
-			return true
-		end
-
+	if Character and Character:FindFirstChild(ItemName, true) then
+		return true
 	end
 
 	return false
 end
 
 --========================================================
--- READ INVENTORY PROGRESS
+-- DRAGON ITEMS
 --========================================================
 
-local function ReadInventory()
+local function HasDragonStorm()
 
-	local Result = {
-		Belts = {},
-		DragonStorm = false,
-		DragonHeart = false
-	}
-
-	-- 8 belt
-	for _, Belt in ipairs(Belts) do
-		Result.Belts[Belt.Key] = HasItem(Belt.Key)
-	end
-
-	-- Dragon Storm
-	Result.DragonStorm =
+	return
 		HasItem("Dragon Storm")
 		or HasItem("Dragonstorm")
-
-	-- Dragonheart
-	Result.DragonHeart =
-		HasItem("Dragonheart")
-		or HasItem("Dragon Heart")
-
-	return Result
 end
 
--- Cho Kaitun dùng nếu cần
-_G.HoaiHubReadInventory = ReadInventory
+local function HasDragonHeart()
+
+	return
+		HasItem("Dragonheart")
+		or HasItem("Dragon Heart")
+		or HasItem("DragonHeart")
+end
 
 --========================================================
--- STATUS LOOP
+-- STATUS
+--========================================================
+
+local function SetStatus(Text)
+
+	if _G.HoaiHubSetStatus then
+		_G.HoaiHubSetStatus(Text)
+	end
+
+end
+
+--========================================================
+-- CHECK LOOP
 --========================================================
 
 task.spawn(function()
 
 	while Player.Parent do
 
-		local Progress = ReadInventory()
-
-		local NextBelt
+		local NextBelt = nil
 
 		-- Tìm đai đầu tiên chưa có
 		for _, Belt in ipairs(Belts) do
 
-			if not Progress.Belts[Belt.Key] then
+			if not HasItem(Belt.Item) then
 				NextBelt = Belt
 				break
 			end
 
 		end
 
-		-- Đai tiếp theo
+		-- Còn đai
 		if NextBelt then
 
 			SetStatus(
 				"Getting "
-				.. NextBelt.Key
+				.. NextBelt.Name
 				.. " / Đang lấy "
 				.. NextBelt.VN
 				.. "..."
 			)
 
 		-- Đủ 8 đai -> Dragon Storm
-		elseif not Progress.DragonStorm then
+		elseif not HasDragonStorm() then
 
 			SetStatus(
 				"Getting Dragon Storm / Đang lấy Dragon Storm..."
 			)
 
 		-- Có Storm -> Dragonheart
-		elseif not Progress.DragonHeart then
+		elseif not HasDragonHeart() then
 
 			SetStatus(
 				"Getting Dragonheart / Đang lấy Dragonheart..."
 			)
 
-		-- Đủ hết
+		-- Hoàn thành
 		else
 
 			SetStatus(
