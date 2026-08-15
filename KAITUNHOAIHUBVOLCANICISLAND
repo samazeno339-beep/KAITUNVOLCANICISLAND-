@@ -1,7 +1,8 @@
 --//========================================================
 --// HOÀI HUB
 --// Kaitun volcanic island A-Z
---// UI + SAFE FIX LAG + AUTO MARINES
+--// Purple UI + Safe Fix Lag + Auto Marines
+--// Status luôn: STATUS: Waiting...
 --//========================================================
 
 local Players = game:GetService("Players")
@@ -62,12 +63,10 @@ end
 --========================================================
 
 local ScreenGui = Instance.new("ScreenGui")
-
 ScreenGui.Name = "HoaiHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
 ScreenGui.Parent = PlayerGui
 
 --========================================================
@@ -79,23 +78,17 @@ local Status = Instance.new("TextLabel")
 Status.Name = "Status"
 
 Status.Size = UDim2.fromOffset(310, 24)
-
 Status.Position = CONFIG.StatusPosition
 
 Status.BackgroundTransparency = 1
 
 Status.Font = Enum.Font.GothamMedium
-
 Status.Text = "STATUS: Waiting..."
-
 Status.TextColor3 = CONFIG.AccentLight
-
 Status.TextSize = 12
-
 Status.TextXAlignment = Enum.TextXAlignment.Center
 
 Status.ZIndex = 50
-
 Status.Parent = ScreenGui
 
 local function SetStatus(Text)
@@ -117,7 +110,6 @@ Main.Position = CONFIG.MenuPosition
 
 Main.BackgroundColor3 = CONFIG.Background
 Main.BackgroundTransparency = 0.03
-
 Main.BorderSizePixel = 0
 
 Main.ZIndex = 10
@@ -133,21 +125,16 @@ MainStroke.Thickness = 2.5
 MainStroke.Parent = Main
 
 --========================================================
--- MENU LOGO
+-- LOGO
 --========================================================
 
 local MenuLogo = Instance.new("ImageLabel")
 
 MenuLogo.Name = "MenuLogo"
-
 MenuLogo.BackgroundTransparency = 1
 
 MenuLogo.Size = UDim2.fromOffset(42, 42)
-
-MenuLogo.Position = UDim2.new(
-	0, 10,
-	0, 10
-)
+MenuLogo.Position = UDim2.new(0, 10, 0, 10)
 
 MenuLogo.Image = CONFIG.Logo
 MenuLogo.ScaleType = Enum.ScaleType.Fit
@@ -162,31 +149,15 @@ MenuLogo.Parent = Main
 local Title = Instance.new("TextLabel")
 
 Title.Name = "Title"
-
 Title.BackgroundTransparency = 1
 
-Title.Position = UDim2.new(
-	0, 50,
-	0, 10
-)
-
-Title.Size = UDim2.new(
-	1, -60,
-	0, 30
-)
+Title.Position = UDim2.new(0, 50, 0, 10)
+Title.Size = UDim2.new(1, -60, 0, 30)
 
 Title.Font = Enum.Font.GothamBold
-
 Title.Text = CONFIG.Title
-
-Title.TextColor3 = Color3.fromRGB(
-	245,
-	238,
-	255
-)
-
+Title.TextColor3 = Color3.fromRGB(245, 238, 255)
 Title.TextSize = 19
-
 Title.TextXAlignment = Enum.TextXAlignment.Center
 
 Title.ZIndex = 11
@@ -199,31 +170,15 @@ Title.Parent = Main
 local Subtitle = Instance.new("TextLabel")
 
 Subtitle.Name = "Subtitle"
-
 Subtitle.BackgroundTransparency = 1
 
-Subtitle.Position = UDim2.new(
-	0, 10,
-	0, 56
-)
-
-Subtitle.Size = UDim2.new(
-	1, -20,
-	0, 28
-)
+Subtitle.Position = UDim2.new(0, 10, 0, 56)
+Subtitle.Size = UDim2.new(1, -20, 0, 28)
 
 Subtitle.Font = Enum.Font.GothamSemibold
-
 Subtitle.Text = CONFIG.Subtitle
-
-Subtitle.TextColor3 = Color3.fromRGB(
-	205,
-	175,
-	235
-)
-
+Subtitle.TextColor3 = Color3.fromRGB(205, 175, 235)
 Subtitle.TextSize = 13
-
 Subtitle.TextXAlignment = Enum.TextXAlignment.Center
 
 Subtitle.ZIndex = 11
@@ -237,20 +192,14 @@ local FloatButton = Instance.new("ImageButton")
 
 FloatButton.Name = "FloatingLogo"
 
-FloatButton.Size = UDim2.fromOffset(
-	55,
-	55
-)
-
+FloatButton.Size = UDim2.fromOffset(55, 55)
 FloatButton.Position = CONFIG.FloatingPosition
 
 FloatButton.BackgroundColor3 = CONFIG.Background
 FloatButton.BackgroundTransparency = 0.02
-
 FloatButton.BorderSizePixel = 0
 
 FloatButton.Image = CONFIG.Logo
-
 FloatButton.ScaleType = Enum.ScaleType.Fit
 
 FloatButton.AutoButtonColor = false
@@ -259,19 +208,12 @@ FloatButton.ZIndex = 100
 FloatButton.Parent = ScreenGui
 
 local FloatCorner = Instance.new("UICorner")
-
-FloatCorner.CornerRadius = UDim.new(
-	1,
-	0
-)
-
+FloatCorner.CornerRadius = UDim.new(1, 0)
 FloatCorner.Parent = FloatButton
 
 local FloatStroke = Instance.new("UIStroke")
-
 FloatStroke.Color = CONFIG.Accent
 FloatStroke.Thickness = 2.5
-
 FloatStroke.Parent = FloatButton
 
 --========================================================
@@ -281,25 +223,18 @@ FloatStroke.Parent = FloatButton
 local MenuVisible = true
 
 local function ShowMenu()
-
 	MenuVisible = true
-
 	Main.Visible = true
 
-	Main.Size = UDim2.fromOffset(
-		0,
-		0
-	)
+	Main.Size = UDim2.fromOffset(0, 0)
 
 	local Tween = TweenService:Create(
 		Main,
-
 		TweenInfo.new(
 			0.22,
 			Enum.EasingStyle.Back,
 			Enum.EasingDirection.Out
 		),
-
 		{
 			Size = CONFIG.MenuSize
 		}
@@ -309,45 +244,35 @@ local function ShowMenu()
 end
 
 local function HideMenu()
-
 	MenuVisible = false
 
 	local Tween = TweenService:Create(
 		Main,
-
 		TweenInfo.new(
 			0.16,
 			Enum.EasingStyle.Quad,
 			Enum.EasingDirection.In
 		),
-
 		{
-			Size = UDim2.fromOffset(
-				0,
-				0
-			)
+			Size = UDim2.fromOffset(0, 0)
 		}
 	)
 
 	Tween:Play()
 
 	Tween.Completed:Connect(function()
-
 		if not MenuVisible then
 			Main.Visible = false
 		end
-
 	end)
 end
 
 FloatButton.MouseButton1Click:Connect(function()
-
 	if MenuVisible then
 		HideMenu()
 	else
 		ShowMenu()
 	end
-
 end)
 
 --========================================================
@@ -364,17 +289,15 @@ FloatButton.InputBegan:Connect(function(Input)
 		or Input.UserInputType == Enum.UserInputType.Touch then
 
 		Dragging = true
-
 		DragStart = Input.Position
 		StartPosition = FloatButton.Position
 
 		Input.Changed:Connect(function()
-
 			if Input.UserInputState == Enum.UserInputState.End then
 				Dragging = false
 			end
-
 		end)
+
 	end
 
 end)
@@ -397,6 +320,7 @@ UserInputService.InputChanged:Connect(function(Input)
 			StartPosition.Y.Scale,
 			StartPosition.Y.Offset + Delta.Y
 		)
+
 	end
 
 end)
@@ -436,7 +360,7 @@ local function DisableEffect(Object)
 end
 
 --========================================================
--- PART OPTIMIZATION
+-- OPTIMIZE PART
 --========================================================
 
 local function OptimizePart(Object)
@@ -446,17 +370,15 @@ local function OptimizePart(Object)
 	end
 
 	pcall(function()
-
 		Object.Material = Enum.Material.SmoothPlastic
 		Object.CastShadow = false
 		Object.Reflectance = 0
-
 	end)
 
 end
 
 --========================================================
--- MAP TEXTURE / DECAL
+-- HIDE MAP TEXTURES
 --========================================================
 
 local function HideMapTexture(Object)
@@ -473,7 +395,7 @@ local function HideMapTexture(Object)
 end
 
 --========================================================
--- NPC CLOTHING
+-- HIDE NPC CLOTHES
 --========================================================
 
 local function HideNPCClothes(Character)
@@ -488,14 +410,14 @@ local function HideNPCClothes(Character)
 		return
 	end
 
-	-- Không ẩn đồ của chính player
+	-- Giữ nguyên trang phục người chơi
 	if Character == LocalPlayer.Character then
 		return
 	end
 
 	for _, Object in ipairs(Character:GetDescendants()) do
 
-		-- Accessory
+		-- Accessory / tóc / mũ
 		if Object:IsA("Accessory") then
 
 			for _, Part in ipairs(Object:GetDescendants()) do
@@ -515,6 +437,7 @@ local function HideNPCClothes(Character)
 					end)
 
 				end
+
 			end
 
 		-- Shirt
@@ -538,25 +461,18 @@ local function HideNPCClothes(Character)
 				Object.Graphic = ""
 			end)
 
-		-- Texture / Decal
-		elseif Object:IsA("Texture")
-			or Object:IsA("Decal") then
-
-			pcall(function()
-				Object.Transparency = 1
-			end)
-
 		end
 	end
+
 end
 
 --========================================================
--- APPLY OPTIMIZATION
+-- PROCESS OBJECT
 --========================================================
 
 local function OptimizeObject(Object)
 
-	-- Không đụng UI
+	-- Không đụng UI HOÀI HUB
 	if Object:IsDescendantOf(PlayerGui) then
 		return
 	end
@@ -574,8 +490,10 @@ end
 pcall(function()
 
 	Lighting.GlobalShadows = false
+
 	Lighting.EnvironmentDiffuseScale = 0
 	Lighting.EnvironmentSpecularScale = 0
+
 	Lighting.FogEnd = 100000
 
 end)
@@ -587,17 +505,15 @@ end
 Lighting.ChildAdded:Connect(function(Object)
 
 	task.defer(function()
-
 		if Object.Parent then
 			DisableEffect(Object)
 		end
-
 	end)
 
 end)
 
 --========================================================
--- OPTIMIZE EXISTING MAP
+-- PROCESS EXISTING WORKSPACE
 --========================================================
 
 for _, Object in ipairs(Workspace:GetDescendants()) do
@@ -605,7 +521,7 @@ for _, Object in ipairs(Workspace:GetDescendants()) do
 end
 
 --========================================================
--- CURRENT NPC
+-- EXISTING NPC
 --========================================================
 
 for _, Object in ipairs(Workspace:GetDescendants()) do
@@ -620,7 +536,7 @@ for _, Object in ipairs(Workspace:GetDescendants()) do
 end
 
 --========================================================
--- NEW WORKSPACE OBJECT
+-- NEW WORKSPACE OBJECTS
 --========================================================
 
 Workspace.DescendantAdded:Connect(function(Object)
@@ -633,7 +549,8 @@ Workspace.DescendantAdded:Connect(function(Object)
 
 		OptimizeObject(Object)
 
-		local Character = Object:FindFirstAncestorOfClass("Model")
+		local Character =
+			Object:FindFirstAncestorOfClass("Model")
 
 		if Character
 			and Character:FindFirstChildOfClass("Humanoid")
@@ -647,17 +564,21 @@ Workspace.DescendantAdded:Connect(function(Object)
 end)
 
 --========================================================
--- CHARACTER RESPAWN
+-- PLAYER CHARACTER
 --========================================================
 
 LocalPlayer.CharacterAdded:Connect(function(Character)
 
 	task.wait(0.2)
 
+	-- Chỉ tối ưu đồ họa, không xóa character
 	for _, Object in ipairs(Character:GetDescendants()) do
 
-		OptimizePart(Object)
-		DisableEffect(Object)
+		if Object:IsA("BasePart") then
+			OptimizePart(Object)
+		else
+			DisableEffect(Object)
+		end
 
 	end
 
@@ -668,15 +589,15 @@ end)
 --========================================================
 
 pcall(function()
-
 	settings().Rendering.QualityLevel =
 		Enum.QualityLevel.Level01
-
 end)
 
 --========================================================
 -- AUTO SELECT MARINES
 --========================================================
+-- Chạy ngầm, KHÔNG thay đổi STATUS
+-- STATUS vẫn giữ "Waiting..."
 
 task.spawn(function()
 
@@ -684,84 +605,72 @@ task.spawn(function()
 		game.Loaded:Wait()
 	end
 
-	SetStatus("Waiting for Marines...")
-
-	local Remotes = ReplicatedStorage:WaitForChild("Remotes", 30)
+	local Remotes =
+		ReplicatedStorage:WaitForChild(
+			"Remotes",
+			30
+		)
 
 	if not Remotes then
 		warn("HOÀI HUB: Remotes not found")
-		SetStatus("Marines Failed")
 		return
 	end
 
-	local CommF_ = Remotes:WaitForChild("CommF_", 30)
+	local CommF_ =
+		Remotes:WaitForChild(
+			"CommF_",
+			30
+		)
 
 	if not CommF_ then
 		warn("HOÀI HUB: CommF_ not found")
-		SetStatus("Marines Failed")
 		return
 	end
 
-	-- Nếu đã có team thì không cần chọn
+	-- Đã có team thì không làm gì
 	if LocalPlayer.Team then
-
-		if string.lower(LocalPlayer.Team.Name) == "marines" then
-			SetStatus("Marines Selected")
-		else
-			SetStatus("Team Already Selected")
-		end
-
 		return
 	end
 
-	SetStatus("Selecting Marines...")
-
+	-- Tự chọn Marines
 	local Deadline = os.clock() + 15
 
 	while LocalPlayer.Parent
 		and LocalPlayer.Team == nil
 		and os.clock() < Deadline do
 
-		local Success, Result = pcall(function()
+		pcall(function()
 
-			return CommF_:InvokeServer(
+			CommF_:InvokeServer(
 				"SetTeam",
 				"Marines"
 			)
 
 		end)
 
-		if not Success then
-			warn("HOÀI HUB: SetTeam failed:", Result)
-		end
-
 		task.wait(0.5)
+
 	end
 
 	if LocalPlayer.Team then
-
-		if string.lower(LocalPlayer.Team.Name) == "marines" then
-			SetStatus("Marines Selected")
-			print("HOÀI HUB: Marines Selected")
-		else
-			SetStatus("Team Already Selected")
-		end
-
+		print(
+			"HOÀI HUB: Team = "
+				.. LocalPlayer.Team.Name
+		)
 	else
-
-		SetStatus("Marine Select Failed")
-		warn("HOÀI HUB: Could not select Marines")
-
+		warn(
+			"HOÀI HUB: Marine selection failed"
+		)
 	end
 
 end)
 
 --========================================================
--- STATUS
+-- FORCE STATUS BACK TO WAITING
 --========================================================
 
 Status.Visible = true
-Main.Visible = true
+SetStatus("Waiting...")
 
 --========================================================
 -- PURPLE MENU GLOW
@@ -772,7 +681,6 @@ task.spawn(function()
 	while ScreenGui.Parent do
 
 		local A = TweenService:Create(
-
 			MainStroke,
 
 			TweenInfo.new(
@@ -791,7 +699,6 @@ task.spawn(function()
 		A.Completed:Wait()
 
 		local B = TweenService:Create(
-
 			MainStroke,
 
 			TweenInfo.new(
@@ -822,7 +729,6 @@ task.spawn(function()
 	while ScreenGui.Parent do
 
 		local A = TweenService:Create(
-
 			FloatStroke,
 
 			TweenInfo.new(
@@ -841,7 +747,6 @@ task.spawn(function()
 		A.Completed:Wait()
 
 		local B = TweenService:Create(
-
 			FloatStroke,
 
 			TweenInfo.new(
@@ -867,6 +772,9 @@ end)
 -- READY
 --========================================================
 
+Main.Visible = true
+Status.Visible = true
+
 print("HOÀI HUB: UI Loaded")
-print("HOÀI HUB: Safe Fix Lag Active")
+print("HOÀI HUB: Fix Lag Active")
 print("HOÀI HUB: Auto Marines Active")
