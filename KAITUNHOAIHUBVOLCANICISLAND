@@ -578,87 +578,69 @@ Main.Visible = true
 Status.Visible = true
 
 print("HOÀI HUB - UI Loaded")
---// HOÀI HUB - FULL LOW GRAPHICS
---// Biến toàn bộ map thành kiểu "cục nhựa"
---// Tắt bóng + texture + effect để giảm render
---// Client-side
+--// HOÀI HUB - EXTREME LOW GRAPHICS
+--// Client-side optimization
+--// Giữ Character + NPC + gameplay objects
+--// Không xóa UI
 
+local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
---==================================================
--- LIGHTING
---==================================================
+local LocalPlayer = Players.LocalPlayer
 
-pcall(function()
-	Lighting.GlobalShadows = false
-	Lighting.EnvironmentDiffuseScale = 0
-	Lighting.EnvironmentSpecularScale = 0
-	Lighting.Brightness = 1
-	Lighting.FogEnd = 100000
-end)
+--========================================================
+-- CONFIG
+--========================================================
 
---==================================================
--- XÓA POST EFFECT
---==================================================
+local HIDE_ENVIRONMENT_MODELS = true
+local HIDE_TEXTURES = true
+local REMOVE_EFFECTS = true
+local SMOOTH_PLASTIC = true
+local DISABLE_SHADOWS = true
+local LOW_RENDER_QUALITY = true
 
-local function RemoveLightingEffect(obj)
-	if obj:IsA("BloomEffect")
-		or obj:IsA("BlurEffect")
-		or obj:IsA("ColorCorrectionEffect")
-		or obj:IsA("DepthOfFieldEffect")
-		or obj:IsA("SunRaysEffect") then
+--========================================================
+-- CHECK GAMEPLAY OBJECT
+--========================================================
 
-		pcall(function()
-			obj:Destroy()
-		end)
+local function IsGameplayModel(model)
+	if not model or not model:IsA("Model") then
+		return true
+	end
 
+	-- Character của mình
+	if model == LocalPlayer.Character then
+		return true
+	end
+
+	-- Character/NPC có Humanoid
+	if model:FindFirstChildOfClass("Humanoid") then
+		return true
+	end
+
+	-- Giữ các model có script/module bên trong
+	-- để hạn chế làm hỏng object gameplay.
+	if model:FindFirstChildOfClass("Script")
+		or model:FindFirstChildOfClass("LocalScript")
+		or model:FindFirstChildOfClass("ModuleScript") then
 		return true
 	end
 
 	return false
 end
 
-for _, obj in ipairs(Lighting:GetChildren()) do
-	RemoveLightingEffect(obj)
-end
+--========================================================
+-- REMOVE EFFECTS
+--========================================================
 
-Lighting.ChildAdded:Connect(function(obj)
-	task.defer(function()
-		if obj.Parent then
-			RemoveLightingEffect(obj)
-		end
-	end)
-end)
+local function RemoveEffect(obj)
 
---==================================================
--- LOW GRAPHICS
---==================================================
-
-local function OptimizeObject(obj)
-
-	-- Làm Part / MeshPart thành SmoothPlastic
-	if obj:IsA("BasePart") then
-		pcall(function()
-			obj.Material = Enum.Material.SmoothPlastic
-			obj.CastShadow = false
-			obj.Reflectance = 0
-		end)
-	end
-
-	-- Ẩn texture / decal
-	if obj:IsA("Texture") or obj:IsA("Decal") then
-		pcall(function()
-			obj.Transparency = 1
-		end)
-	end
-
-	-- Xóa hiệu ứng
 	if obj:IsA("ParticleEmitter")
 		or obj:IsA("Trail")
 		or obj:IsA("Beam")
-		or obj:IsA("Smoke")
 		or obj:IsA("Fire")
+		or obj:IsA("Smoke")
 		or obj:IsA("Sparkles")
 		or obj:IsA("Highlight") then
 
@@ -668,34 +650,216 @@ local function OptimizeObject(obj)
 
 		return
 	end
+
+	if obj:IsA("PostEffect") then
+
+		pcall(function()
+			obj.Enabled = false
+			obj:Destroy()
+		end)
+
+		return
+	end
 end
 
---==================================================
--- ÁP DỤNG TOÀN BỘ MAP
---==================================================
+--========================================================
+-- OPTIMIZE PART
+--========================================================
 
-for _, obj in ipairs(Workspace:GetDescendants()) do
-	OptimizeObject(obj)
-end
+local function OptimizePart(obj)
 
---==================================================
--- OBJECT MỚI CŨNG TỰ TỐI ƯU
---==================================================
+	if not obj:IsA("BasePart") then
+		return
+	end
 
-Workspace.DescendantAdded:Connect(function(obj)
-	task.defer(function()
-		if obj.Parent then
-			OptimizeObject(obj)
+	pcall(function()
+
+		-- SmoothPlastic
+		if SMOOTH_PLASTIC then
+			obj.Material = Enum.Material.SmoothPlastic
 		end
-	end)
-end)
 
---==================================================
--- GIẢM QUALITY CLIENT
---==================================================
+		-- Tắt đổ bóng
+		if DISABLE_SHADOWS then
+			obj.CastShadow = false
+		end
+
+		-- Tắt phản chiếu
+		obj.Reflectance = 0
+
+	end)
+end
+
+--========================================================
+-- HIDE TEXTURE / DECAL
+--========================================================
+
+local function HideTexture(obj)
+
+	if not HIDE_TEXTURES then
+		return
+	end
+
+	if obj:IsA("Texture") or obj:IsA("Decal") then
+
+		pcall(function()
+			obj.Transparency = 1
+		end)
+
+	end
+end
+
+--========================================================
+-- HIDE ENVIRONMENT OBJECT
+--========================================================
+
+local function HideEnvironmentPart(obj)
+
+	if not HIDE_ENVIRONMENT_MODELS then
+		return
+	end
+
+	if not obj:IsA("BasePart") then
+		return
+	end
+
+	-- Tìm model cha
+	local model = obj:FindFirstAncestorOfClass("Model")
+
+	-- Không có model cha -> vẫn xử lý part môi trường
+	if model and IsGameplayModel(model) then
+		return
+	end
+
+	pcall(function()
+
+		-- Ẩn riêng ở client
+		obj.LocalTransparencyModifier = 1
+
+		-- Không render shadow
+		obj.CastShadow = false
+
+	end)
+end
+
+--========================================================
+-- PROCESS OBJECT
+--========================================================
+
+local function OptimizeObject(obj)
+
+	-- Effect
+	if REMOVE_EFFECTS then
+		RemoveEffect(obj)
+	end
+
+	-- Part
+	OptimizePart(obj)
+
+	-- Texture / Decal
+	HideTexture(obj)
+
+	-- Environment
+	HideEnvironmentPart(obj)
+
+end
+
+--========================================================
+-- LIGHTING
+--========================================================
 
 pcall(function()
-	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+
+	Lighting.GlobalShadows = false
+	Lighting.EnvironmentDiffuseScale = 0
+	Lighting.EnvironmentSpecularScale = 0
+
+	-- Giảm sương
+	Lighting.FogEnd = 100000
+
 end)
 
-print("HOÀI HUB: FULL LOW GRAPHICS ACTIVE")
+-- Xóa post processing hiện tại
+for _, obj in ipairs(Lighting:GetChildren()) do
+	RemoveEffect(obj)
+end
+
+-- Post processing mới xuất hiện
+Lighting.ChildAdded:Connect(function(obj)
+
+	task.defer(function()
+
+		if obj.Parent and REMOVE_EFFECTS then
+			RemoveEffect(obj)
+		end
+
+	end)
+
+end)
+
+--========================================================
+-- APPLY TO EXISTING MAP
+--========================================================
+
+for _, obj in ipairs(Workspace:GetDescendants()) do
+
+	-- Không xử lý PlayerGui
+	OptimizeObject(obj)
+
+end
+
+--========================================================
+-- NEW OBJECTS
+--========================================================
+
+Workspace.DescendantAdded:Connect(function(obj)
+
+	task.defer(function()
+
+		if not obj.Parent then
+			return
+		end
+
+		OptimizeObject(obj)
+
+	end)
+
+end)
+
+--========================================================
+-- CHARACTER RESPAWN
+--========================================================
+
+LocalPlayer.CharacterAdded:Connect(function(character)
+
+	-- Character luôn được giữ lại
+	task.defer(function()
+
+		for _, obj in ipairs(character:GetDescendants()) do
+
+			-- Chỉ tối ưu hiệu ứng trên character
+			if REMOVE_EFFECTS then
+				RemoveEffect(obj)
+			end
+
+			OptimizePart(obj)
+
+		end
+
+	end)
+
+end)
+
+--========================================================
+-- LOW RENDER QUALITY
+--========================================================
+
+if LOW_RENDER_QUALITY then
+
+	pcall(function()
+		settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+	end)
+
+end
+
+print("HOÀI HUB : EXTREME LOW GRAPHICS ACTIVE")
