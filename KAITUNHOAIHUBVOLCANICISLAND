@@ -750,3 +750,66 @@ pcall(function()
 end)
 
 print("EXTREME LOW GRAPHICS: ACTIVE")
+--// AUTO SELECT MARINES
+--// Tự bấm phe MARINES khi màn chọn phe xuất hiện
+
+local Players = game:GetService("Players")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local function FindMarinesButton(root)
+	-- Ưu tiên object tên Marines
+	for _, obj in ipairs(root:GetDescendants()) do
+		if (obj:IsA("TextButton") or obj:IsA("ImageButton"))
+			and string.find(string.lower(obj.Name), "marine") then
+			return obj
+		end
+	end
+
+	-- Tìm nút chứa Text "MARINES"
+	for _, obj in ipairs(root:GetDescendants()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			for _, child in ipairs(obj:GetDescendants()) do
+				if child:IsA("TextLabel")
+					and string.find(string.lower(child.Text), "marine") then
+					return obj
+				end
+			end
+		end
+	end
+
+	return nil
+end
+
+local function SelectMarines()
+	local chooseTeam = PlayerGui:FindFirstChild("Main", true)
+
+	if not chooseTeam then
+		return false
+	end
+
+	local button = FindMarinesButton(chooseTeam)
+
+	if button then
+		pcall(function()
+			button:Activate()
+		end)
+
+		print("HOÀI HUB: MARINES selected")
+		return true
+	end
+
+	return false
+end
+
+-- Chờ màn chọn phe xuất hiện
+task.spawn(function()
+	while true do
+		if SelectMarines() then
+			break
+		end
+
+		task.wait(0.2)
+	end
+end)
