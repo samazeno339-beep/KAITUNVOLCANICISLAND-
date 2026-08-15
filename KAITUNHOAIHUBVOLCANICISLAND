@@ -751,70 +751,56 @@ end)
 
 print("EXTREME LOW GRAPHICS: ACTIVE")
 --==================================================
+--==================================================
 -- AUTO SELECT MARINES
--- Bật script = tự chọn phe Hải quân
 --==================================================
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-
-local function FindMarineButton()
-	-- Tìm button có tên liên quan đến Marine
-	for _, obj in ipairs(PlayerGui:GetDescendants()) do
-		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-			local name = string.lower(obj.Name or "")
-
-			if string.find(name, "marine") then
-				return obj
-			end
-		end
-	end
-
-	-- Tìm button chứa TextLabel "MARINES"
-	for _, button in ipairs(PlayerGui:GetDescendants()) do
-		if button:IsA("TextButton") or button:IsA("ImageButton") then
-			for _, child in ipairs(button:GetDescendants()) do
-				if child:IsA("TextLabel") then
-					local text = string.lower(child.Text or "")
-
-					if string.find(text, "marine") then
-						return button
-					end
-				end
-			end
-		end
-	end
-
-	return nil
-end
 
 task.spawn(function()
 
-	while true do
-
-		local button = FindMarineButton()
-
-		if button then
-
-			print("HOÀI HUB: MARINES FOUND")
-
-			pcall(function()
-				button:Activate()
-			end)
-
-			if _G.HoaiHubSetStatus then
-				_G.HoaiHubSetStatus("Selecting Marines...")
-			end
-
-			-- Chờ game xử lý lựa chọn
-			task.wait(1)
-
-			break
-		end
-
-		task.wait(0.2)
+	-- Chờ game load hoàn tất
+	if not game:IsLoaded() then
+		game.Loaded:Wait()
 	end
+
+	local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+	local CommF_ = Remotes:WaitForChild("CommF_")
+
+	-- Chờ DataLoaded nếu game có object này
+	local DataLoaded = Player:FindFirstChild("DataLoaded")
+
+	if DataLoaded then
+		pcall(function()
+			DataLoaded:GetPropertyChangedSignal("Value"):Wait()
+		end)
+	end
+
+	-- Nếu chưa có team thì chọn Marines
+	local Data = Player:FindFirstChild("Data")
+
+	if Data then
+		local Team = Data:FindFirstChild("Team")
+
+		if not Team or Team.Value == "" then
+			pcall(function()
+				CommF_:InvokeServer("SetTeam", "Marines")
+			end)
+		end
+	else
+		-- Dự phòng: thử chọn Marines trực tiếp
+		pcall(function()
+			CommF_:InvokeServer("SetTeam", "Marines")
+		end)
+	end
+
+	if _G.HoaiHubSetStatus then
+		_G.HoaiHubSetStatus("Marine Selected")
+	end
+
+	print("HOÀI HUB: Marines selected")
 
 end)
