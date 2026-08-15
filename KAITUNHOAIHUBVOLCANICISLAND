@@ -778,3 +778,197 @@ Status.Visible = true
 print("HOÀI HUB: UI Loaded")
 print("HOÀI HUB: Fix Lag Active")
 print("HOÀI HUB: Auto Marines Active")
+--========================================================
+-- HOÀI HUB - INVENTORY STATUS CHECKER
+-- Check mỗi 0.25 giây
+-- Chỉ kiểm tra:
+-- 8 Dojo Belts
+-- Dragon Storm
+-- Dragonheart
+--========================================================
+
+local Players = game:GetService("Players")
+
+local Player = Players.LocalPlayer
+
+--========================================================
+-- STATUS
+--========================================================
+
+local function SetStatus(Text)
+	if _G.HoaiHubSetStatus then
+		_G.HoaiHubSetStatus(Text)
+	end
+end
+
+--========================================================
+-- 8 DOJO BELTS
+--========================================================
+
+local Belts = {
+	{
+		Key = "White Belt",
+		VN = "đai Trắng"
+	},
+
+	{
+		Key = "Yellow Belt",
+		VN = "đai Vàng"
+	},
+
+	{
+		Key = "Orange Belt",
+		VN = "đai Cam"
+	},
+
+	{
+		Key = "Green Belt",
+		VN = "đai Xanh Lá"
+	},
+
+	{
+		Key = "Blue Belt",
+		VN = "đai Xanh Dương"
+	},
+
+	{
+		Key = "Purple Belt",
+		VN = "đai Tím"
+	},
+
+	{
+		Key = "Red Belt",
+		VN = "đai Đỏ"
+	},
+
+	{
+		Key = "Black Belt",
+		VN = "đai Đen"
+	}
+}
+
+--========================================================
+-- CHECK INVENTORY
+--========================================================
+
+local function HasItem(ItemName)
+
+	-- Backpack
+	local Backpack = Player:FindFirstChildOfClass("Backpack")
+
+	if Backpack then
+
+		if Backpack:FindFirstChild(ItemName, true) then
+			return true
+		end
+
+	end
+
+	-- Character
+	local Character = Player.Character
+
+	if Character then
+
+		if Character:FindFirstChild(ItemName, true) then
+			return true
+		end
+
+	end
+
+	return false
+end
+
+--========================================================
+-- READ INVENTORY PROGRESS
+--========================================================
+
+local function ReadInventory()
+
+	local Result = {
+		Belts = {},
+		DragonStorm = false,
+		DragonHeart = false
+	}
+
+	-- 8 belt
+	for _, Belt in ipairs(Belts) do
+		Result.Belts[Belt.Key] = HasItem(Belt.Key)
+	end
+
+	-- Dragon Storm
+	Result.DragonStorm =
+		HasItem("Dragon Storm")
+		or HasItem("Dragonstorm")
+
+	-- Dragonheart
+	Result.DragonHeart =
+		HasItem("Dragonheart")
+		or HasItem("Dragon Heart")
+
+	return Result
+end
+
+-- Cho Kaitun dùng nếu cần
+_G.HoaiHubReadInventory = ReadInventory
+
+--========================================================
+-- STATUS LOOP
+--========================================================
+
+task.spawn(function()
+
+	while Player.Parent do
+
+		local Progress = ReadInventory()
+
+		local NextBelt
+
+		-- Tìm đai đầu tiên chưa có
+		for _, Belt in ipairs(Belts) do
+
+			if not Progress.Belts[Belt.Key] then
+				NextBelt = Belt
+				break
+			end
+
+		end
+
+		-- Đai tiếp theo
+		if NextBelt then
+
+			SetStatus(
+				"Getting "
+				.. NextBelt.Key
+				.. " / Đang lấy "
+				.. NextBelt.VN
+				.. "..."
+			)
+
+		-- Đủ 8 đai -> Dragon Storm
+		elseif not Progress.DragonStorm then
+
+			SetStatus(
+				"Getting Dragon Storm / Đang lấy Dragon Storm..."
+			)
+
+		-- Có Storm -> Dragonheart
+		elseif not Progress.DragonHeart then
+
+			SetStatus(
+				"Getting Dragonheart / Đang lấy Dragonheart..."
+			)
+
+		-- Đủ hết
+		else
+
+			SetStatus(
+				"Complete / Đã hoàn thành!"
+			)
+
+		end
+
+		task.wait(0.25)
+
+	end
+
+end)
