@@ -1,16 +1,17 @@
 --//========================================================
 --// HOÀI HUB
 --// Kaitun volcanic island A-Z
---// Purple UI
---// Floating Logo Toggle
+--// Purple UI + Extreme Safe Fix Lag
 --//========================================================
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 --========================================================
 -- CONFIG
@@ -20,14 +21,11 @@ local CONFIG = {
 	Title = "HOÀI HUB",
 	Subtitle = "Kaitun volcanic island A-Z",
 
-	-- Logo của m
 	Logo = "rbxassetid://82514517939235",
 
-	-- Purple
 	Accent = Color3.fromRGB(165, 70, 255),
 	AccentLight = Color3.fromRGB(215, 150, 255),
 
-	-- UI
 	Background = Color3.fromRGB(13, 10, 18),
 
 	MenuSize = UDim2.fromOffset(310, 120),
@@ -52,10 +50,10 @@ local CONFIG = {
 -- REMOVE OLD GUI
 --========================================================
 
-local oldGui = PlayerGui:FindFirstChild("HoaiHub")
+local OldGui = PlayerGui:FindFirstChild("HoaiHub")
 
-if oldGui then
-	oldGui:Destroy()
+if OldGui then
+	OldGui:Destroy()
 end
 
 --========================================================
@@ -80,24 +78,25 @@ local Status = Instance.new("TextLabel")
 Status.Name = "Status"
 
 Status.Size = UDim2.fromOffset(310, 24)
-
 Status.Position = CONFIG.StatusPosition
 
 Status.BackgroundTransparency = 1
 
 Status.Font = Enum.Font.GothamMedium
-
 Status.Text = "STATUS: Waiting..."
 
 Status.TextColor3 = CONFIG.AccentLight
-
 Status.TextSize = 12
-
 Status.TextXAlignment = Enum.TextXAlignment.Center
 
 Status.ZIndex = 50
-
 Status.Parent = ScreenGui
+
+local function SetStatus(Text)
+	Status.Text = "STATUS: " .. tostring(Text)
+end
+
+_G.HoaiHubSetStatus = SetStatus
 
 --========================================================
 -- MAIN MENU
@@ -108,39 +107,27 @@ local Main = Instance.new("Frame")
 Main.Name = "Main"
 
 Main.Size = CONFIG.MenuSize
-
 Main.Position = CONFIG.MenuPosition
 
 Main.BackgroundColor3 = CONFIG.Background
-
 Main.BackgroundTransparency = 0.03
 
 Main.BorderSizePixel = 0
 
 Main.ZIndex = 10
-
 Main.Parent = ScreenGui
 
--- Corner
-
 local MainCorner = Instance.new("UICorner")
-
 MainCorner.CornerRadius = UDim.new(0, 9)
-
 MainCorner.Parent = Main
 
--- Border
-
 local MainStroke = Instance.new("UIStroke")
-
 MainStroke.Color = CONFIG.Accent
-
 MainStroke.Thickness = 2.5
-
 MainStroke.Parent = Main
 
 --========================================================
--- LOGO TRONG MENU
+-- MENU LOGO
 --========================================================
 
 local MenuLogo = Instance.new("ImageLabel")
@@ -157,11 +144,9 @@ MenuLogo.Position = UDim2.new(
 )
 
 MenuLogo.Image = CONFIG.Logo
-
 MenuLogo.ScaleType = Enum.ScaleType.Fit
 
 MenuLogo.ZIndex = 11
-
 MenuLogo.Parent = Main
 
 --========================================================
@@ -195,11 +180,9 @@ Title.TextColor3 = Color3.fromRGB(
 )
 
 Title.TextSize = 19
-
 Title.TextXAlignment = Enum.TextXAlignment.Center
 
 Title.ZIndex = 11
-
 Title.Parent = Main
 
 --========================================================
@@ -233,64 +216,43 @@ Subtitle.TextColor3 = Color3.fromRGB(
 )
 
 Subtitle.TextSize = 13
-
 Subtitle.TextXAlignment = Enum.TextXAlignment.Center
 
 Subtitle.ZIndex = 11
-
 Subtitle.Parent = Main
 
 --========================================================
--- FLOATING LOGO BUTTON
+-- FLOATING LOGO
 --========================================================
 
 local FloatButton = Instance.new("ImageButton")
 
 FloatButton.Name = "FloatingLogo"
 
-FloatButton.Size = UDim2.fromOffset(
-	55,
-	55
-)
+FloatButton.Size = UDim2.fromOffset(55, 55)
 
 FloatButton.Position = CONFIG.FloatingPosition
 
 FloatButton.BackgroundColor3 = CONFIG.Background
-
 FloatButton.BackgroundTransparency = 0.02
 
 FloatButton.BorderSizePixel = 0
 
--- Logo của m
 FloatButton.Image = CONFIG.Logo
-
 FloatButton.ScaleType = Enum.ScaleType.Fit
 
 FloatButton.AutoButtonColor = false
 
 FloatButton.ZIndex = 100
-
 FloatButton.Parent = ScreenGui
 
--- Tròn
-
 local FloatCorner = Instance.new("UICorner")
-
-FloatCorner.CornerRadius = UDim.new(
-	1,
-	0
-)
-
+FloatCorner.CornerRadius = UDim.new(1, 0)
 FloatCorner.Parent = FloatButton
 
--- Viền tím
-
 local FloatStroke = Instance.new("UIStroke")
-
 FloatStroke.Color = CONFIG.Accent
-
 FloatStroke.Thickness = 2.5
-
 FloatStroke.Parent = FloatButton
 
 --========================================================
@@ -302,79 +264,58 @@ local MenuVisible = true
 local function ShowMenu()
 
 	MenuVisible = true
-
 	Main.Visible = true
 
-	Main.Size = UDim2.fromOffset(
-		0,
-		0
-	)
+	Main.Size = UDim2.fromOffset(0, 0)
 
-	local tween = TweenService:Create(
+	local Tween = TweenService:Create(
 		Main,
-
 		TweenInfo.new(
 			0.22,
 			Enum.EasingStyle.Back,
 			Enum.EasingDirection.Out
 		),
-
 		{
 			Size = CONFIG.MenuSize
 		}
 	)
 
-	tween:Play()
-
+	Tween:Play()
 end
 
 local function HideMenu()
 
 	MenuVisible = false
 
-	local tween = TweenService:Create(
+	local Tween = TweenService:Create(
 		Main,
-
 		TweenInfo.new(
 			0.16,
 			Enum.EasingStyle.Quad,
 			Enum.EasingDirection.In
 		),
-
 		{
-			Size = UDim2.fromOffset(
-				0,
-				0
-			)
+			Size = UDim2.fromOffset(0, 0)
 		}
 	)
 
-	tween:Play()
+	Tween:Play()
 
-	tween.Completed:Connect(function()
+	Tween.Completed:Connect(function()
 
 		if not MenuVisible then
 			Main.Visible = false
 		end
 
 	end)
-
 end
-
---========================================================
--- FLOATING LOGO CLICK
---========================================================
 
 FloatButton.MouseButton1Click:Connect(function()
 
 	if MenuVisible then
-
 		HideMenu()
-
 	else
-
 		ShowMenu()
-
 	end
 
 end)
@@ -384,50 +325,39 @@ end)
 --========================================================
 
 local Dragging = false
+local DragStart
+local StartPosition
 
-local DragStart = nil
+FloatButton.InputBegan:Connect(function(Input)
 
-local StartPosition = nil
-
-FloatButton.InputBegan:Connect(function(input)
-
-	if
-		input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch
-	then
+	if Input.UserInputType == Enum.UserInputType.MouseButton1
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
 		Dragging = true
-
-		DragStart = input.Position
-
+		DragStart = Input.Position
 		StartPosition = FloatButton.Position
 
-		input.Changed:Connect(function()
+		Input.Changed:Connect(function()
 
-			if input.UserInputState == Enum.UserInputState.End then
-
+			if Input.UserInputState == Enum.UserInputState.End then
 				Dragging = false
-
 			end
 
 		end)
-
 	end
 
 end)
 
-UserInputService.InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(Input)
 
 	if not Dragging then
 		return
 	end
 
-	if
-		input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch
-	then
+	if Input.UserInputType == Enum.UserInputType.MouseMovement
+		or Input.UserInputType == Enum.UserInputType.Touch then
 
-		local Delta = input.Position - DragStart
+		local Delta = Input.Position - DragStart
 
 		FloatButton.Position = UDim2.new(
 			StartPosition.X.Scale,
@@ -436,42 +366,364 @@ UserInputService.InputChanged:Connect(function(input)
 			StartPosition.Y.Scale,
 			StartPosition.Y.Offset + Delta.Y
 		)
-
 	end
 
 end)
 
 --========================================================
--- STATUS FUNCTION
+-- DISABLE VISUAL EFFECT
 --========================================================
 
-local function SetStatus(Text)
+local function DisableEffect(Object)
 
-	Status.Text = "STATUS: " .. tostring(Text)
+	-- Particle / combat / environment effects
+	if Object:IsA("ParticleEmitter")
+		or Object:IsA("Trail")
+		or Object:IsA("Beam")
+		or Object:IsA("Fire")
+		or Object:IsA("Smoke")
+		or Object:IsA("Sparkles")
+		or Object:IsA("Highlight") then
+
+		pcall(function()
+			Object.Enabled = false
+		end)
+
+		return
+	end
+
+	-- Post-processing
+	if Object:IsA("BloomEffect")
+		or Object:IsA("BlurEffect")
+		or Object:IsA("ColorCorrectionEffect")
+		or Object:IsA("DepthOfFieldEffect")
+		or Object:IsA("SunRaysEffect") then
+
+		pcall(function()
+			Object.Enabled = false
+		end)
+
+	end
+end
+
+--========================================================
+-- OPTIMIZE PART
+--========================================================
+
+local function OptimizePart(Object)
+
+	if not Object:IsA("BasePart") then
+		return
+	end
+
+	pcall(function()
+
+		-- Cục nhựa
+		Object.Material = Enum.Material.SmoothPlastic
+
+		-- Tắt bóng
+		Object.CastShadow = false
+
+		-- Tắt phản chiếu
+		Object.Reflectance = 0
+
+	end)
+
+	-- MeshPart
+	if Object:IsA("MeshPart") then
+
+		pcall(function()
+
+			-- Ưu tiên performance
+			Object.RenderFidelity = Enum.RenderFidelity.Performance
+
+			-- Bỏ texture của MeshPart
+			Object.TextureID = ""
+
+		end)
+
+	end
+end
+
+--========================================================
+-- HIDE MAP DECAL / TEXTURE
+--========================================================
+
+local function HideMapTexture(Object)
+
+	if Object:IsA("Texture")
+		or Object:IsA("Decal") then
+
+		pcall(function()
+			Object.Transparency = 1
+		end)
+
+	end
+end
+
+--========================================================
+-- HIDE NPC CLOTHES
+--========================================================
+
+local function HideNPCClothes(Character)
+
+	if not Character:IsA("Model") then
+		return
+	end
+
+	local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+
+	if not Humanoid then
+		return
+	end
+
+	-- Không ẩn đồ của chính người chơi
+	if Character == LocalPlayer.Character then
+		return
+	end
+
+	for _, Object in ipairs(Character:GetDescendants()) do
+
+		-- Accessory: tóc, mũ, áo phụ kiện, v.v.
+		if Object:IsA("Accessory") then
+
+			for _, Part in ipairs(Object:GetDescendants()) do
+
+				if Part:IsA("BasePart") then
+
+					pcall(function()
+
+						Part.LocalTransparencyModifier = 1
+						Part.CastShadow = false
+
+					end)
+
+				elseif Part:IsA("Texture")
+					or Part:IsA("Decal") then
+
+					pcall(function()
+						Part.Transparency = 1
+					end)
+
+				end
+			end
+
+		-- Shirt
+		elseif Object:IsA("Shirt") then
+
+			pcall(function()
+				Object.ShirtTemplate = ""
+			end)
+
+		-- Pants
+		elseif Object:IsA("Pants") then
+
+			pcall(function()
+				Object.PantsTemplate = ""
+			end)
+
+		-- Shirt graphic
+		elseif Object:IsA("ShirtGraphic") then
+
+			pcall(function()
+				Object.Graphic = ""
+			end)
+
+		-- Texture/Decal trên NPC
+		elseif Object:IsA("Texture")
+			or Object:IsA("Decal") then
+
+			pcall(function()
+				Object.Transparency = 1
+			end)
+
+		end
+	end
+end
+
+--========================================================
+-- PROCESS OBJECT
+--========================================================
+
+local function OptimizeObject(Object)
+
+	-- Không đụng UI
+	if Object:IsDescendantOf(PlayerGui) then
+		return
+	end
+
+	DisableEffect(Object)
+
+	OptimizePart(Object)
+
+	HideMapTexture(Object)
 
 end
 
--- Cho phần Kaitun sau này gọi
-_G.HoaiHubSetStatus = SetStatus
+--========================================================
+-- LIGHTING
+--========================================================
+
+pcall(function()
+
+	Lighting.GlobalShadows = false
+
+	Lighting.EnvironmentDiffuseScale = 0
+
+	Lighting.EnvironmentSpecularScale = 0
+
+	Lighting.FogEnd = 100000
+
+end)
 
 --========================================================
--- STATUS LUÔN HIỆN
+-- DISABLE EXISTING LIGHTING EFFECT
+--========================================================
+
+for _, Object in ipairs(Lighting:GetChildren()) do
+	DisableEffect(Object)
+end
+
+--========================================================
+-- OPTIMIZE EXISTING WORKSPACE
+--========================================================
+
+for _, Object in ipairs(Workspace:GetDescendants()) do
+
+	OptimizeObject(Object)
+
+end
+
+--========================================================
+-- NPC HIỆN TẠI
+--========================================================
+
+for _, Object in ipairs(Workspace:GetDescendants()) do
+
+	if Object:IsA("Model")
+		and Object:FindFirstChildOfClass("Humanoid") then
+
+		HideNPCClothes(Object)
+
+	end
+
+end
+
+--========================================================
+-- WORKSPACE OBJECT MỚI
+--========================================================
+
+Workspace.DescendantAdded:Connect(function(Object)
+
+	task.defer(function()
+
+		if not Object.Parent then
+			return
+		end
+
+		OptimizeObject(Object)
+
+		-- Nếu thuộc NPC thì xử lý cosmetic
+		local Character = Object:FindFirstAncestorOfClass("Model")
+
+		if Character
+			and Character:FindFirstChildOfClass("Humanoid") then
+
+			HideNPCClothes(Character)
+
+		end
+
+	end)
+
+end)
+
+--========================================================
+-- LIGHTING OBJECT MỚI
+--========================================================
+
+Lighting.ChildAdded:Connect(function(Object)
+
+	task.defer(function()
+
+		if Object.Parent then
+			DisableEffect(Object)
+		end
+
+	end)
+
+end)
+
+--========================================================
+-- NPC / CHARACTER RESPAWN
+--========================================================
+
+LocalPlayer.CharacterAdded:Connect(function(Character)
+
+	-- Giữ nguyên nhân vật người chơi
+	task.wait(0.2)
+
+	for _, Object in ipairs(Character:GetDescendants()) do
+
+		OptimizePart(Object)
+
+		DisableEffect(Object)
+
+	end
+
+end)
+
+-- NPC mới có Humanoid
+Workspace.DescendantAdded:Connect(function(Object)
+
+	if not Object:IsA("Model") then
+		return
+	end
+
+	task.defer(function()
+
+		task.wait(0.1)
+
+		if Object.Parent
+			and Object:FindFirstChildOfClass("Humanoid")
+			and Object ~= LocalPlayer.Character then
+
+			HideNPCClothes(Object)
+
+		end
+
+	end)
+
+end)
+
+--========================================================
+-- LOW RENDER QUALITY
+--========================================================
+
+pcall(function()
+
+	settings().Rendering.QualityLevel =
+		Enum.QualityLevel.Level01
+
+end)
+
+--========================================================
+-- STATUS
 --========================================================
 
 Status.Visible = true
+Main.Visible = true
 
-SetStatus("Waiting...")
+SetStatus("Fix Lag: Active")
 
 --========================================================
--- PURPLE GLOW
+-- PURPLE MENU GLOW
 --========================================================
 
 task.spawn(function()
 
 	while ScreenGui.Parent do
 
-		local Tween1 = TweenService:Create(
-
+		local A = TweenService:Create(
 			MainStroke,
 
 			TweenInfo.new(
@@ -484,15 +736,12 @@ task.spawn(function()
 				Color = CONFIG.AccentLight,
 				Thickness = 3
 			}
-
 		)
 
-		Tween1:Play()
+		A:Play()
+		A.Completed:Wait()
 
-		Tween1.Completed:Wait()
-
-		local Tween2 = TweenService:Create(
-
+		local B = TweenService:Create(
 			MainStroke,
 
 			TweenInfo.new(
@@ -505,27 +754,24 @@ task.spawn(function()
 				Color = CONFIG.Accent,
 				Thickness = 2.5
 			}
-
 		)
 
-		Tween2:Play()
-
-		Tween2.Completed:Wait()
+		B:Play()
+		B.Completed:Wait()
 
 	end
 
 end)
 
 --========================================================
--- FLOATING BUTTON GLOW
+-- FLOATING LOGO GLOW
 --========================================================
 
 task.spawn(function()
 
 	while ScreenGui.Parent do
 
-		local Tween1 = TweenService:Create(
-
+		local A = TweenService:Create(
 			FloatStroke,
 
 			TweenInfo.new(
@@ -538,15 +784,12 @@ task.spawn(function()
 				Color = CONFIG.AccentLight,
 				Thickness = 3.5
 			}
-
 		)
 
-		Tween1:Play()
+		A:Play()
+		A.Completed:Wait()
 
-		Tween1.Completed:Wait()
-
-		local Tween2 = TweenService:Create(
-
+		local B = TweenService:Create(
 			FloatStroke,
 
 			TweenInfo.new(
@@ -559,12 +802,10 @@ task.spawn(function()
 				Color = CONFIG.Accent,
 				Thickness = 2.5
 			}
-
 		)
 
-		Tween2:Play()
-
-		Tween2.Completed:Wait()
+		B:Play()
+		B.Completed:Wait()
 
 	end
 
@@ -574,269 +815,5 @@ end)
 -- READY
 --========================================================
 
-Main.Visible = true
-Status.Visible = true
-
-print("HOÀI HUB - UI Loaded")
---// EXTREME LOW GRAPHICS
---// Giữ toàn bộ đảo + NPC
---// Chỉ làm đồ họa đơn giản kiểu "xi măng"
-
-local Players = game:GetService("Players")
-local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
-
-local LocalPlayer = Players.LocalPlayer
-
---------------------------------------------------
--- LIGHTING
---------------------------------------------------
-
-pcall(function()
-	Lighting.GlobalShadows = false
-	Lighting.EnvironmentDiffuseScale = 0
-	Lighting.EnvironmentSpecularScale = 0
-	Lighting.FogEnd = 100000
-end)
-
---------------------------------------------------
--- XÓA POST PROCESSING
---------------------------------------------------
-
-local function RemovePostEffect(obj)
-	if obj:IsA("BloomEffect")
-		or obj:IsA("BlurEffect")
-		or obj:IsA("ColorCorrectionEffect")
-		or obj:IsA("DepthOfFieldEffect")
-		or obj:IsA("SunRaysEffect") then
-
-		pcall(function()
-			obj:Destroy()
-		end)
-	end
-end
-
-for _, obj in ipairs(Lighting:GetChildren()) do
-	RemovePostEffect(obj)
-end
-
-Lighting.ChildAdded:Connect(function(obj)
-	task.defer(function()
-		if obj.Parent then
-			RemovePostEffect(obj)
-		end
-	end)
-end)
-
---------------------------------------------------
--- EFFECTS
---------------------------------------------------
-
-local function RemoveEffect(obj)
-
-	if obj:IsA("ParticleEmitter")
-		or obj:IsA("Trail")
-		or obj:IsA("Beam")
-		or obj:IsA("Fire")
-		or obj:IsA("Smoke")
-		or obj:IsA("Sparkles")
-		or obj:IsA("Highlight") then
-
-		pcall(function()
-			obj:Destroy()
-		end)
-
-	end
-
-end
-
---------------------------------------------------
--- TỐI ƯU ĐỒ HỌA
---------------------------------------------------
-
-local function Optimize(obj)
-
-	-- Tất cả Part / MeshPart thành kiểu xi măng đơn giản
-	if obj:IsA("BasePart") then
-
-		pcall(function()
-			obj.Material = Enum.Material.Concrete
-			obj.CastShadow = false
-			obj.Reflectance = 0
-		end)
-
-	end
-
-	-- Ẩn texture/decal
-	if obj:IsA("Texture") or obj:IsA("Decal") then
-
-		pcall(function()
-			obj.Transparency = 1
-		end)
-
-	end
-
-	-- Xóa effect
-	RemoveEffect(obj)
-
-end
-
---------------------------------------------------
--- ÁP DỤNG TOÀN MAP
---------------------------------------------------
-
-for _, obj in ipairs(Workspace:GetDescendants()) do
-	Optimize(obj)
-end
-
---------------------------------------------------
--- OBJECT MỚI
---------------------------------------------------
-
-Workspace.DescendantAdded:Connect(function(obj)
-
-	task.defer(function()
-
-		if obj.Parent then
-			Optimize(obj)
-		end
-
-	end)
-
-end)
-
---------------------------------------------------
--- CHARACTER
---------------------------------------------------
-
-LocalPlayer.CharacterAdded:Connect(function(character)
-
-	task.wait(0.2)
-
-	for _, obj in ipairs(character:GetDescendants()) do
-
-		if obj:IsA("BasePart") then
-
-			pcall(function()
-				obj.Material = Enum.Material.Concrete
-				obj.CastShadow = false
-				obj.Reflectance = 0
-			end)
-
-		elseif obj:IsA("ParticleEmitter")
-			or obj:IsA("Trail")
-			or obj:IsA("Beam")
-			or obj:IsA("Fire")
-			or obj:IsA("Smoke")
-			or obj:IsA("Sparkles")
-			or obj:IsA("Highlight") then
-
-			pcall(function()
-				obj:Destroy()
-			end)
-
-		end
-
-	end
-
-end)
-
---------------------------------------------------
--- LOW QUALITY
---------------------------------------------------
-
-pcall(function()
-	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-end)
-
-print("EXTREME LOW GRAPHICS: ACTIVE")
---========================================================
--- AUTO SELECT MARINES - NO MAIN
---========================================================
-
-task.spawn(function()
-
-	local Players = game:GetService("Players")
-	local Player = Players.LocalPlayer
-	local PlayerGui = Player:WaitForChild("PlayerGui")
-
-	local function SetStatus(text)
-		if _G.HoaiHubSetStatus then
-			_G.HoaiHubSetStatus(text)
-		end
-	end
-
-	SetStatus("Searching team screen...")
-
-	local ChooseTeam
-	local startTime = os.clock()
-
-	-- Tìm ChooseTeam ở mọi nơi trong PlayerGui
-	while not ChooseTeam and os.clock() - startTime < 60 do
-
-		for _, obj in ipairs(PlayerGui:GetDescendants()) do
-
-			if obj.Name == "ChooseTeam" then
-				ChooseTeam = obj
-				break
-			end
-
-		end
-
-		if not ChooseTeam then
-			task.wait(0.2)
-		end
-	end
-
-	if not ChooseTeam then
-		SetStatus("ChooseTeam not found")
-		warn("HOAI HUB: ChooseTeam not found")
-		return
-	end
-
-	SetStatus("ChooseTeam found")
-	task.wait(0.3)
-
-	-- Tìm Marines ở bên trong ChooseTeam
-	local Marines = ChooseTeam:FindFirstChild("Marines", true)
-
-	if not Marines then
-		SetStatus("Marines not found")
-		warn("HOAI HUB: Marines not found")
-		return
-	end
-
-	SetStatus("Marines found")
-	task.wait(0.3)
-
-	-- Tìm button trong Marines
-	local Button
-
-	for _, obj in ipairs(Marines:GetDescendants()) do
-		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-			Button = obj
-			break
-		end
-	end
-
-	if not Button then
-		SetStatus("Marine button not found")
-		warn("HOAI HUB: Marine button not found")
-		return
-	end
-
-	SetStatus("Selecting Marines...")
-	task.wait(0.3)
-
-	-- Activate
-	pcall(function()
-		Button:Activate()
-	end)
-
-	task.wait(1)
-
-	SetStatus("Marines Selected")
-
-	print("HOAI HUB: Marines selected")
-
-end)
+print("HOÀI HUB: UI Loaded")
+print("HOÀI HUB: Extreme Safe Fix Lag Active")
