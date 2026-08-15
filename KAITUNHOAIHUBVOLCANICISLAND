@@ -750,35 +750,37 @@ pcall(function()
 end)
 
 print("EXTREME LOW GRAPHICS: ACTIVE")
---// AUTO SELECT MARINES
---// Tự tìm ô hình nhân vật Marines
+--==================================================
+-- AUTO SELECT MARINES
+-- Bật script = tự chọn phe Hải quân
+--==================================================
 
 local Players = game:GetService("Players")
 
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
-local function FindMarineImageButton()
-
+local function FindMarineButton()
+	-- Tìm button có tên liên quan đến Marine
 	for _, obj in ipairs(PlayerGui:GetDescendants()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			local name = string.lower(obj.Name or "")
 
-		if obj:IsA("ImageButton") then
+			if string.find(name, "marine") then
+				return obj
+			end
+		end
+	end
 
-			-- Tìm chữ MARINES nằm trong cùng khu vực / parent
-			local parent = obj.Parent
+	-- Tìm button chứa TextLabel "MARINES"
+	for _, button in ipairs(PlayerGui:GetDescendants()) do
+		if button:IsA("TextButton") or button:IsA("ImageButton") then
+			for _, child in ipairs(button:GetDescendants()) do
+				if child:IsA("TextLabel") then
+					local text = string.lower(child.Text or "")
 
-			if parent then
-
-				for _, child in ipairs(parent:GetDescendants()) do
-
-					if child:IsA("TextLabel") then
-
-						local text = string.lower(child.Text or "")
-
-						if string.find(text, "marines") then
-							return obj
-						end
-
+					if string.find(text, "marine") then
+						return button
 					end
 				end
 			end
@@ -792,11 +794,11 @@ task.spawn(function()
 
 	while true do
 
-		local button = FindMarineImageButton()
+		local button = FindMarineButton()
 
 		if button then
 
-			print("HOÀI HUB: Found Marine character button")
+			print("HOÀI HUB: MARINES FOUND")
 
 			pcall(function()
 				button:Activate()
@@ -805,6 +807,9 @@ task.spawn(function()
 			if _G.HoaiHubSetStatus then
 				_G.HoaiHubSetStatus("Selecting Marines...")
 			end
+
+			-- Chờ game xử lý lựa chọn
+			task.wait(1)
 
 			break
 		end
