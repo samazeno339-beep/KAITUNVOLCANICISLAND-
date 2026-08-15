@@ -751,116 +751,113 @@ end)
 
 print("EXTREME LOW GRAPHICS: ACTIVE")
 --========================================================
--- AUTO SELECT MARINES
+-- AUTO SELECT MARINES - DEBUG
 --========================================================
-
-local Players = game:GetService("Players")
-local VirtualUser = game:GetService("VirtualUser")
-
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
 
 task.spawn(function()
 
-	-- Chờ Main xuất hiện
-	local Main
+	local function Status(text)
+		if _G.HoaiHubSetStatus then
+			_G.HoaiHubSetStatus(text)
+		else
+			print("HOAI HUB:", text)
+		end
+	end
 
-	repeat
-		Main = PlayerGui:FindFirstChild("Main")
+	local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+	Status("Waiting for Main...")
+
+	local Main = PlayerGui:WaitForChild("Main", 60)
+
+	if not Main then
+		Status("Main not found")
+		warn("HOAI HUB: Main not found")
+		return
+	end
+
+	Status("Main Found")
+	task.wait(0.5)
+
+	local ChooseTeam = Main:WaitForChild("ChooseTeam", 60)
+
+	if not ChooseTeam then
+		Status("ChooseTeam not found")
+		warn("HOAI HUB: ChooseTeam not found")
+		return
+	end
+
+	Status("ChooseTeam Found")
+	task.wait(0.5)
+
+	while not ChooseTeam.Visible do
+		Status("Waiting for team screen...")
 		task.wait(0.2)
-	until Main
+	end
 
-	print("HOÀI HUB: Main found")
+	Status("Searching Marines...")
+	task.wait(0.5)
 
-	-- Chờ ChooseTeam
-	local ChooseTeam
-
-	repeat
-		ChooseTeam = Main:FindFirstChild("ChooseTeam")
-		task.wait(0.2)
-	until ChooseTeam
-
-	print("HOÀI HUB: ChooseTeam found")
-
-	-- Chờ màn chọn phe hiện
-	repeat
-		task.wait(0.1)
-	until ChooseTeam.Visible == true
-
-	print("HOÀI HUB: ChooseTeam visible")
-
-	-- Lấy đúng đường dẫn Marines
 	local Container = ChooseTeam:FindFirstChild("Container")
 
 	if not Container then
-		warn("HOÀI HUB: Container not found")
+		Status("Container not found")
+		warn("HOAI HUB: Container not found")
 		return
 	end
+
+	Status("Container Found")
+	task.wait(0.5)
 
 	local Marines = Container:FindFirstChild("Marines")
 
 	if not Marines then
-		warn("HOÀI HUB: Marines not found")
+		Status("Marines not found")
+		warn("HOAI HUB: Marines not found")
 		return
 	end
+
+	Status("Marines Found")
+	task.wait(0.5)
 
 	local Frame = Marines:FindFirstChild("Frame")
 
 	if not Frame then
-		warn("HOÀI HUB: Marines Frame not found")
+		Status("Marine Frame not found")
 		return
 	end
+
+	Status("Marine Frame Found")
+	task.wait(0.5)
 
 	local ViewportFrame = Frame:FindFirstChild("ViewportFrame")
 
 	if not ViewportFrame then
-		warn("HOÀI HUB: ViewportFrame not found")
+		Status("ViewportFrame not found")
 		return
 	end
+
+	Status("ViewportFrame Found")
+	task.wait(0.5)
 
 	local Button = ViewportFrame:FindFirstChild("TextButton")
 
 	if not Button then
-		warn("HOÀI HUB: Marines TextButton not found")
+		Status("Marine Button not found")
 		return
 	end
 
-	print("HOÀI HUB: Marines button found")
-
-	--====================================================
-	-- BIẾN NÚT MARINES THÀNH VÙNG CLICK LỚN
-	--====================================================
-
-	pcall(function()
-		Button.Size = UDim2.new(0, 10000, 0, 10000)
-		Button.Position = UDim2.new(-4, 0, -5, 0)
-		Button.BackgroundTransparency = 1
-		Button.Visible = true
-		Button.Active = true
-	end)
-
+	Status("Marine Button Found")
 	task.wait(0.5)
 
-	--====================================================
-	-- GIẢ LẬP CLICK
-	--====================================================
-
 	pcall(function()
-		VirtualUser:Button1Down(Vector2.new(99, 99))
-		task.wait(0.1)
-		VirtualUser:Button1Up(Vector2.new(99, 99))
+		Button:Activate()
 	end)
 
-	task.wait(1)
+	Status("Selecting Marines...")
 
-	--====================================================
-	-- STATUS
-	--====================================================
+	task.wait(2)
 
-	if _G.HoaiHubSetStatus then
-		_G.HoaiHubSetStatus("Marines Selected")
-	end
-
-	print("HOÀI HUB: Marines selection sent")
+	Status("Marines Selected")
 
 end)
