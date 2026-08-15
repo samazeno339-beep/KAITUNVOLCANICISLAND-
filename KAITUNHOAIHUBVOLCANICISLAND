@@ -779,111 +779,294 @@ print("HOÀI HUB: UI Loaded")
 print("HOÀI HUB: Fix Lag Active")
 print("HOÀI HUB: Auto Marines Active")
 --========================================================
--- HOÀI HUB - DOJO INVENTORY CHECKER
--- Check mỗi 0.25 giây
+-- HOÀI HUB - ADVANCED INVENTORY CHECKER
+-- Check: 8 Dojo Belts + Dragon Storm + Dragonheart
+-- Interval: 0.25s
 --========================================================
 
 local Players = game:GetService("Players")
+
 local Player = Players.LocalPlayer
-
-local Belts = {
-	{
-		Item = "Dojo Belt (White)",
-		Name = "White Belt",
-		VN = "đai Trắng"
-	},
-
-	{
-		Item = "Dojo Belt (Yellow)",
-		Name = "Yellow Belt",
-		VN = "đai Vàng"
-	},
-
-	{
-		Item = "Dojo Belt (Orange)",
-		Name = "Orange Belt",
-		VN = "đai Cam"
-	},
-
-	{
-		Item = "Dojo Belt (Green)",
-		Name = "Green Belt",
-		VN = "đai Xanh Lá"
-	},
-
-	{
-		Item = "Dojo Belt (Blue)",
-		Name = "Blue Belt",
-		VN = "đai Xanh Dương"
-	},
-
-	{
-		Item = "Dojo Belt (Purple)",
-		Name = "Purple Belt",
-		VN = "đai Tím"
-	},
-
-	{
-		Item = "Dojo Belt (Red)",
-		Name = "Red Belt",
-		VN = "đai Đỏ"
-	},
-
-	{
-		Item = "Dojo Belt (Black)",
-		Name = "Black Belt",
-		VN = "đai Đen"
-	}
-}
-
---========================================================
--- CHECK ITEM
---========================================================
-
-local function HasItem(ItemName)
-
-	local Backpack = Player:FindFirstChildOfClass("Backpack")
-
-	if Backpack and Backpack:FindFirstChild(ItemName, true) then
-		return true
-	end
-
-	local Character = Player.Character
-
-	if Character and Character:FindFirstChild(ItemName, true) then
-		return true
-	end
-
-	return false
-end
-
---========================================================
--- DRAGON ITEMS
---========================================================
-
-local function HasDragonStorm()
-
-	return
-		HasItem("Dragon Storm")
-		or HasItem("Dragonstorm")
-end
-
-local function HasDragonHeart()
-
-	return
-		HasItem("Dragonheart")
-		or HasItem("Dragon Heart")
-		or HasItem("DragonHeart")
-end
 
 --========================================================
 -- STATUS
 --========================================================
 
 local function SetStatus(Text)
-
 	if _G.HoaiHubSetStatus then
 		_G.HoaiHubSetStatus(Text)
+	end
+end
+
+--========================================================
+-- EXACT ITEM NAMES
+--========================================================
+
+local Belts = {
+	{
+		Item = "Dojo Belt (White)",
+		English = "White Belt",
+		Vietnamese = "đai Trắng"
+	},
+
+	{
+		Item = "Dojo Belt (Yellow)",
+		English = "Yellow Belt",
+		Vietnamese = "đai Vàng"
+	},
+
+	{
+		Item = "Dojo Belt (Orange)",
+		English = "Orange Belt",
+		Vietnamese = "đai Cam"
+	},
+
+	{
+		Item = "Dojo Belt (Green)",
+		English = "Green Belt",
+		Vietnamese = "đai Xanh Lá"
+	},
+
+	{
+		Item = "Dojo Belt (Blue)",
+		English = "Blue Belt",
+		Vietnamese = "đai Xanh Dương"
+	},
+
+	{
+		Item = "Dojo Belt (Purple)",
+		English = "Purple Belt",
+		Vietnamese = "đai Tím"
+	},
+
+	{
+		Item = "Dojo Belt (Red)",
+		English = "Red Belt",
+		Vietnamese = "đai Đỏ"
+	},
+
+	{
+		Item = "Dojo Belt (Black)",
+		English = "Black Belt",
+		Vietnamese = "đai Đen"
+	}
+}
+
+-- Các tên có thể gặp của 2 món cuối
+local DragonStormNames = {
+	"Dragon Storm",
+	"Dragonstorm",
+	"Dragon Storm Gun"
+}
+
+local DragonHeartNames = {
+	"Dragonheart",
+	"Dragon Heart",
+	"DragonHeart"
+}
+
+--========================================================
+-- NORMALIZE NAME
+--========================================================
+
+local function NormalizeName(Name)
+
+	if typeof(Name) ~= "string" then
+		return ""
+	end
+
+	Name = Name:gsub("^%s+", "")
+	Name = Name:gsub("%s+$", "")
+	Name = Name:gsub("%s+", " ")
+
+	return string.lower(Name)
+
+end
+
+--========================================================
+-- BUILD INVENTORY SET
+-- Quét Backpack + Character đúng 1 lần
+--========================================================
+
+local function BuildInventorySet()
+
+	local Owned = {}
+
+	local function Scan(Container)
+
+		if not Container then
+			return
+		end
+
+		for _, Object in ipairs(Container:GetDescendants()) do
+
+			-- Chỉ cần tên Instance
+			local Name = NormalizeName(Object.Name)
+
+			if Name ~= "" then
+				Owned[Name] = true
+			end
+
+		end
+	end
+
+	-- Backpack
+	Scan(Player:FindFirstChildOfClass("Backpack"))
+
+	-- Item đang equip
+	Scan(Player.Character)
+
+	return Owned
+end
+
+--========================================================
+-- CHECK ANY NAME
+--========================================================
+
+local function HasAny(Owned, Names)
+
+	for _, Name in ipairs(Names) do
+
+		if Owned[NormalizeName(Name)] then
+			return true
+		end
+
+	end
+
+	return false
+end
+
+--========================================================
+-- READ PROGRESS
+--========================================================
+
+local function ReadProgress()
+
+	local Owned = BuildInventorySet()
+
+	local Result = {
+		Belts = {},
+		DragonStorm = false,
+		DragonHeart = false,
+		BeltCount = 0
+	}
+
+	--====================================================
+	-- CHECK 8 BELTS
+	--====================================================
+
+	for _, Belt in ipairs(Belts) do
+
+		local HasBelt =
+			Owned[NormalizeName(Belt.Item)] == true
+
+		Result.Belts[Belt.Item] = HasBelt
+
+		if HasBelt then
+			Result.BeltCount += 1
+		end
+
+	end
+
+	--====================================================
+	-- DRAGON STORM
+	--====================================================
+
+	Result.DragonStorm =
+		HasAny(Owned, DragonStormNames)
+
+	--====================================================
+	-- DRAGONHEART
+	--====================================================
+
+	Result.DragonHeart =
+		HasAny(Owned, DragonHeartNames)
+
+	return Result
+end
+
+-- Cho Kaitun dùng
+_G.HoaiHubReadInventory = ReadProgress
+
+--========================================================
+-- STATUS CHECK
+--========================================================
+
+local LastStatus = nil
+
+local function UpdateProgressStatus()
+
+	local Progress = ReadProgress()
+
+	------------------------------------------------
+	-- TÌM ĐAI ĐẦU TIÊN CHƯA CÓ
+	------------------------------------------------
+
+	for _, Belt in ipairs(Belts) do
+
+		if not Progress.Belts[Belt.Item] then
+
+			local Text =
+				"Getting "
+				.. Belt.English
+				.. " / Đang lấy "
+				.. Belt.Vietnamese
+				.. "..."
+
+			if LastStatus ~= Text then
+				LastStatus = Text
+				SetStatus(Text)
+			end
+
+			return
+		end
+
+	end
+
+	------------------------------------------------
+	-- ĐỦ 8 ĐAI
+	------------------------------------------------
+
+	if not Progress.DragonStorm then
+
+		local Text =
+			"Getting Dragon Storm / Đang lấy Dragon Storm..."
+
+		if LastStatus ~= Text then
+			LastStatus = Text
+			SetStatus(Text)
+		end
+
+		return
+	end
+
+	------------------------------------------------
+	-- CÓ DRAGON STORM
+	------------------------------------------------
+
+	if not Progress.DragonHeart then
+
+		local Text =
+			"Getting Dragonheart / Đang lấy Dragonheart..."
+
+		if LastStatus ~= Text then
+			LastStatus = Text
+			SetStatus(Text)
+		end
+
+		return
+	end
+
+	------------------------------------------------
+	-- HOÀN THÀNH
+	------------------------------------------------
+
+	local Text =
+		"Complete / Đã hoàn thành!"
+
+	if LastStatus ~= Text then
+		LastStatus = Text
+		SetStatus(Text)
 	end
 
 end
@@ -896,54 +1079,16 @@ task.spawn(function()
 
 	while Player.Parent do
 
-		local NextBelt = nil
-
-		-- Tìm đai đầu tiên chưa có
-		for _, Belt in ipairs(Belts) do
-
-			if not HasItem(Belt.Item) then
-				NextBelt = Belt
-				break
-			end
-
-		end
-
-		-- Còn đai
-		if NextBelt then
-
-			SetStatus(
-				"Getting "
-				.. NextBelt.Name
-				.. " / Đang lấy "
-				.. NextBelt.VN
-				.. "..."
-			)
-
-		-- Đủ 8 đai -> Dragon Storm
-		elseif not HasDragonStorm() then
-
-			SetStatus(
-				"Getting Dragon Storm / Đang lấy Dragon Storm..."
-			)
-
-		-- Có Storm -> Dragonheart
-		elseif not HasDragonHeart() then
-
-			SetStatus(
-				"Getting Dragonheart / Đang lấy Dragonheart..."
-			)
-
-		-- Hoàn thành
-		else
-
-			SetStatus(
-				"Complete / Đã hoàn thành!"
-			)
-
-		end
+		pcall(UpdateProgressStatus)
 
 		task.wait(0.25)
 
 	end
 
 end)
+
+--========================================================
+-- READY
+--========================================================
+
+print("HOÀI HUB: Advanced Inventory Checker Active")
