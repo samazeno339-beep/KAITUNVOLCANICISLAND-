@@ -915,3 +915,19 @@ _G.HoaiHubReadProgress = ReadProgress
 _G.HoaiHubCheckProgress = Update
 
 Status("Waiting...")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+
+if not Remotes then
+	warn("Không tìm thấy ReplicatedStorage.Remotes")
+	return
+end
+
+print("========== REMOTES ==========")
+
+for _, obj in ipairs(Remotes:GetChildren()) do
+	print(obj.ClassName, obj.Name)
+end
+
+print("========== END ==========")
