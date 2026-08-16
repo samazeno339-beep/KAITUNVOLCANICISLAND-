@@ -1,7 +1,7 @@
---//========================================================
---// HOÀI HUB - PART 1
---// UI + SAFE FIX LAG + AUTO MARINES
---//========================================================
+--========================================================
+-- HOÀI HUB - PART 1
+-- UI + LOGO + SAFE FIX LAG + AUTO MARINES
+--========================================================
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -10,8 +10,8 @@ local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
 --========================================================
 -- CONFIG
@@ -25,7 +25,6 @@ local CONFIG = {
 
 	Accent = Color3.fromRGB(165, 70, 255),
 	AccentLight = Color3.fromRGB(215, 150, 255),
-
 	Background = Color3.fromRGB(13, 10, 18),
 
 	MenuSize = UDim2.fromOffset(310, 120),
@@ -45,11 +44,11 @@ local CONFIG = {
 		0.5, -27
 	),
 
-	MarineTimeout = 15
+	Team = "Marines"
 }
 
 --========================================================
--- REMOVE OLD UI
+-- REMOVE OLD GUI
 --========================================================
 
 local OldGui = PlayerGui:FindFirstChild("HoaiHub")
@@ -68,7 +67,6 @@ ScreenGui.Name = "HoaiHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
 ScreenGui.Parent = PlayerGui
 
 --========================================================
@@ -78,29 +76,23 @@ ScreenGui.Parent = PlayerGui
 local Status = Instance.new("TextLabel")
 
 Status.Name = "Status"
-
 Status.Size = UDim2.fromOffset(310, 24)
-
 Status.Position = CONFIG.StatusPosition
 
 Status.BackgroundTransparency = 1
-
 Status.Font = Enum.Font.GothamMedium
 
 Status.Text = "STATUS: Waiting..."
-
 Status.TextColor3 = CONFIG.AccentLight
 Status.TextSize = 12
-
 Status.TextXAlignment = Enum.TextXAlignment.Center
 
 Status.ZIndex = 50
 Status.Parent = ScreenGui
 
-local CurrentStatus = "Waiting..."
+local CurrentStatus = ""
 
 local function SetStatus(Text)
-
 	Text = tostring(Text)
 
 	if CurrentStatus == Text then
@@ -108,66 +100,53 @@ local function SetStatus(Text)
 	end
 
 	CurrentStatus = Text
-
 	Status.Text = "STATUS: " .. Text
 end
 
 _G.HoaiHubSetStatus = SetStatus
 
 --========================================================
--- MAIN MENU
+-- MAIN
 --========================================================
 
 local Main = Instance.new("Frame")
 
 Main.Name = "Main"
-
 Main.Size = CONFIG.MenuSize
 Main.Position = CONFIG.MenuPosition
 
 Main.BackgroundColor3 = CONFIG.Background
 Main.BackgroundTransparency = 0.03
-
 Main.BorderSizePixel = 0
 
 Main.ZIndex = 10
 Main.Parent = ScreenGui
 
-local MainCorner = Instance.new("UICorner")
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 9)
+Corner.Parent = Main
 
-MainCorner.CornerRadius = UDim.new(0, 9)
-MainCorner.Parent = Main
-
-local MainStroke = Instance.new("UIStroke")
-
-MainStroke.Color = CONFIG.Accent
-MainStroke.Thickness = 2.5
-
-MainStroke.Parent = Main
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = CONFIG.Accent
+Stroke.Thickness = 2.5
+Stroke.Parent = Main
 
 --========================================================
--- MENU LOGO
+-- LOGO
 --========================================================
 
-local MenuLogo = Instance.new("ImageLabel")
+local Logo = Instance.new("ImageLabel")
 
-MenuLogo.Name = "MenuLogo"
+Logo.Name = "Logo"
+Logo.BackgroundTransparency = 1
+Logo.Size = UDim2.fromOffset(42, 42)
+Logo.Position = UDim2.fromOffset(10, 10)
 
-MenuLogo.BackgroundTransparency = 1
+Logo.Image = CONFIG.Logo
+Logo.ScaleType = Enum.ScaleType.Fit
 
-MenuLogo.Size = UDim2.fromOffset(42, 42)
-
-MenuLogo.Position = UDim2.new(
-	0, 10,
-	0, 10
-)
-
-MenuLogo.Image = CONFIG.Logo
-
-MenuLogo.ScaleType = Enum.ScaleType.Fit
-
-MenuLogo.ZIndex = 11
-MenuLogo.Parent = Main
+Logo.ZIndex = 11
+Logo.Parent = Main
 
 --========================================================
 -- TITLE
@@ -175,32 +154,15 @@ MenuLogo.Parent = Main
 
 local Title = Instance.new("TextLabel")
 
-Title.Name = "Title"
-
 Title.BackgroundTransparency = 1
-
-Title.Position = UDim2.new(
-	0, 50,
-	0, 10
-)
-
-Title.Size = UDim2.new(
-	1, -60,
-	0, 30
-)
+Title.Position = UDim2.fromOffset(50, 10)
+Title.Size = UDim2.new(1, -60, 0, 30)
 
 Title.Font = Enum.Font.GothamBold
-
 Title.Text = CONFIG.Title
 
-Title.TextColor3 = Color3.fromRGB(
-	245,
-	238,
-	255
-)
-
+Title.TextColor3 = Color3.fromRGB(245, 238, 255)
 Title.TextSize = 19
-
 Title.TextXAlignment = Enum.TextXAlignment.Center
 
 Title.ZIndex = 11
@@ -212,32 +174,15 @@ Title.Parent = Main
 
 local Subtitle = Instance.new("TextLabel")
 
-Subtitle.Name = "Subtitle"
-
 Subtitle.BackgroundTransparency = 1
-
-Subtitle.Position = UDim2.new(
-	0, 10,
-	0, 56
-)
-
-Subtitle.Size = UDim2.new(
-	1, -20,
-	0, 28
-)
+Subtitle.Position = UDim2.fromOffset(10, 56)
+Subtitle.Size = UDim2.new(1, -20, 0, 28)
 
 Subtitle.Font = Enum.Font.GothamSemibold
-
 Subtitle.Text = CONFIG.Subtitle
 
-Subtitle.TextColor3 = Color3.fromRGB(
-	205,
-	175,
-	235
-)
-
+Subtitle.TextColor3 = Color3.fromRGB(205, 175, 235)
 Subtitle.TextSize = 13
-
 Subtitle.TextXAlignment = Enum.TextXAlignment.Center
 
 Subtitle.ZIndex = 11
@@ -250,43 +195,26 @@ Subtitle.Parent = Main
 local FloatButton = Instance.new("ImageButton")
 
 FloatButton.Name = "FloatingLogo"
-
-FloatButton.Size = UDim2.fromOffset(
-	55,
-	55
-)
-
+FloatButton.Size = UDim2.fromOffset(55, 55)
 FloatButton.Position = CONFIG.FloatingPosition
 
 FloatButton.BackgroundColor3 = CONFIG.Background
-
-FloatButton.BackgroundTransparency = 0.02
-
 FloatButton.BorderSizePixel = 0
 
 FloatButton.Image = CONFIG.Logo
-
 FloatButton.ScaleType = Enum.ScaleType.Fit
-
 FloatButton.AutoButtonColor = false
 
 FloatButton.ZIndex = 100
 FloatButton.Parent = ScreenGui
 
 local FloatCorner = Instance.new("UICorner")
-
-FloatCorner.CornerRadius = UDim.new(
-	1,
-	0
-)
-
+FloatCorner.CornerRadius = UDim.new(1, 0)
 FloatCorner.Parent = FloatButton
 
 local FloatStroke = Instance.new("UIStroke")
-
 FloatStroke.Color = CONFIG.Accent
 FloatStroke.Thickness = 2.5
-
 FloatStroke.Parent = FloatButton
 
 --========================================================
@@ -296,75 +224,51 @@ FloatStroke.Parent = FloatButton
 local MenuVisible = true
 
 local function ShowMenu()
-
 	MenuVisible = true
-
 	Main.Visible = true
-
-	Main.Size = UDim2.fromOffset(
-		0,
-		0
-	)
+	Main.Size = UDim2.fromOffset(0, 0)
 
 	local Tween = TweenService:Create(
 		Main,
-
 		TweenInfo.new(
 			0.22,
 			Enum.EasingStyle.Back,
 			Enum.EasingDirection.Out
 		),
-
-		{
-			Size = CONFIG.MenuSize
-		}
+		{Size = CONFIG.MenuSize}
 	)
 
 	Tween:Play()
-
 end
 
 local function HideMenu()
-
 	MenuVisible = false
 
 	local Tween = TweenService:Create(
 		Main,
-
 		TweenInfo.new(
 			0.16,
 			Enum.EasingStyle.Quad,
 			Enum.EasingDirection.In
 		),
-
-		{
-			Size = UDim2.fromOffset(
-				0,
-				0
-			)
-		}
+		{Size = UDim2.fromOffset(0, 0)}
 	)
 
 	Tween:Play()
 
 	Tween.Completed:Connect(function()
-
 		if not MenuVisible then
 			Main.Visible = false
 		end
-
 	end)
-
 end
 
 FloatButton.MouseButton1Click:Connect(function()
-
 	if MenuVisible then
 		HideMenu()
 	else
 		ShowMenu()
 	end
-
 end)
 
 --========================================================
@@ -381,20 +285,15 @@ FloatButton.InputBegan:Connect(function(Input)
 		or Input.UserInputType == Enum.UserInputType.Touch then
 
 		Dragging = true
-
 		DragStart = Input.Position
 		StartPosition = FloatButton.Position
 
 		Input.Changed:Connect(function()
-
 			if Input.UserInputState == Enum.UserInputState.End then
 				Dragging = false
 			end
-
 		end)
-
 	end
-
 end)
 
 UserInputService.InputChanged:Connect(function(Input)
@@ -411,17 +310,14 @@ UserInputService.InputChanged:Connect(function(Input)
 		FloatButton.Position = UDim2.new(
 			StartPosition.X.Scale,
 			StartPosition.X.Offset + Delta.X,
-
 			StartPosition.Y.Scale,
 			StartPosition.Y.Offset + Delta.Y
 		)
-
 	end
-
 end)
 
 --========================================================
--- SAFE EFFECT
+-- SAFE FIX LAG
 --========================================================
 
 local function DisableEffect(Object)
@@ -450,13 +346,8 @@ local function DisableEffect(Object)
 		pcall(function()
 			Object.Enabled = false
 		end)
-
 	end
 end
-
---========================================================
--- LOW GRAPHICS
---========================================================
 
 local function OptimizePart(Object)
 
@@ -465,18 +356,13 @@ local function OptimizePart(Object)
 	end
 
 	pcall(function()
-
 		Object.Material = Enum.Material.SmoothPlastic
-
 		Object.CastShadow = false
-
 		Object.Reflectance = 0
-
 	end)
-
 end
 
-local function HideMapTexture(Object)
+local function HideTexture(Object)
 
 	if Object:IsA("Texture")
 		or Object:IsA("Decal") then
@@ -484,7 +370,6 @@ local function HideMapTexture(Object)
 		pcall(function()
 			Object.Transparency = 1
 		end)
-
 	end
 end
 
@@ -495,11 +380,8 @@ local function OptimizeObject(Object)
 	end
 
 	DisableEffect(Object)
-
 	OptimizePart(Object)
-
-	HideMapTexture(Object)
-
+	HideTexture(Object)
 end
 
 --========================================================
@@ -507,15 +389,10 @@ end
 --========================================================
 
 pcall(function()
-
 	Lighting.GlobalShadows = false
-
 	Lighting.EnvironmentDiffuseScale = 0
-
 	Lighting.EnvironmentSpecularScale = 0
-
 	Lighting.FogEnd = 100000
-
 end)
 
 for _, Object in ipairs(Lighting:GetChildren()) do
@@ -523,19 +400,15 @@ for _, Object in ipairs(Lighting:GetChildren()) do
 end
 
 Lighting.ChildAdded:Connect(function(Object)
-
 	task.defer(function()
-
 		if Object.Parent then
 			DisableEffect(Object)
 		end
-
 	end)
-
 end)
 
 --========================================================
--- APPLY FIX LAG
+-- WORKSPACE
 --========================================================
 
 for _, Object in ipairs(Workspace:GetDescendants()) do
@@ -551,26 +424,30 @@ Workspace.DescendantAdded:Connect(function(Object)
 		end
 
 	end)
-
 end)
 
 --========================================================
 -- NPC COSMETICS
 --========================================================
 
+local function GetHumanoid(Model)
+
+	if not Model or not Model:IsA("Model") then
+		return nil
+	end
+
+	return Model:FindFirstChildOfClass("Humanoid")
+end
+
 local function HideNPCCosmetics(Model)
 
-	if not Model:IsA("Model") then
-		return
-	end
-
-	if Model == LocalPlayer.Character then
-		return
-	end
-
-	local Humanoid = Model:FindFirstChildOfClass("Humanoid")
+	local Humanoid = GetHumanoid(Model)
 
 	if not Humanoid then
+		return
+	end
+
+	if Model == Player.Character then
 		return
 	end
 
@@ -583,10 +460,8 @@ local function HideNPCCosmetics(Model)
 				if Part:IsA("BasePart") then
 
 					pcall(function()
-
 						Part.LocalTransparencyModifier = 1
 						Part.CastShadow = false
-
 					end)
 
 				elseif Part:IsA("Texture")
@@ -597,7 +472,6 @@ local function HideNPCCosmetics(Model)
 					end)
 
 				end
-
 			end
 
 		elseif Object:IsA("Shirt") then
@@ -630,19 +504,15 @@ for _, Object in ipairs(Workspace:GetChildren()) do
 
 end
 
-Workspace.DescendantAdded:Connect(function(Object)
+Workspace.ChildAdded:Connect(function(Object)
 
-	task.defer(function()
+	if Object:IsA("Model") then
 
-		local Model =
-			Object:FindFirstAncestorOfClass("Model")
+		task.defer(function()
+			HideNPCCosmetics(Object)
+		end)
 
-		if Model then
-			HideNPCCosmetics(Model)
-		end
-
-	end)
-
+	end
 end)
 
 --========================================================
@@ -650,40 +520,22 @@ end)
 --========================================================
 
 pcall(function()
-
 	settings().Rendering.QualityLevel =
 		Enum.QualityLevel.Level01
-
 end)
 
 --========================================================
--- CHARACTER
---========================================================
-
-LocalPlayer.CharacterAdded:Connect(function(Character)
-
-	task.wait(0.2)
-
-	for _, Object in ipairs(Character:GetDescendants()) do
-
-		if Object:IsA("BasePart") then
-			OptimizePart(Object)
-		else
-			DisableEffect(Object)
-		end
-
-	end
-
-end)
-
---========================================================
--- AUTO MARINE
+-- AUTO MARINES
 --========================================================
 
 task.spawn(function()
 
 	if not game:IsLoaded() then
 		game.Loaded:Wait()
+	end
+
+	if Player.Team then
+		return
 	end
 
 	local Remotes =
@@ -702,42 +554,20 @@ task.spawn(function()
 		return
 	end
 
-	if LocalPlayer.Team then
-		return
-	end
+	for _ = 1, 20 do
 
-	local Deadline =
-		os.clock() + CONFIG.MarineTimeout
-
-	while LocalPlayer.Parent
-		and LocalPlayer.Team == nil
-		and os.clock() < Deadline do
+		if Player.Team then
+			break
+		end
 
 		pcall(function()
-
 			CommF_:InvokeServer(
 				"SetTeam",
-				"Marines"
+				CONFIG.Team
 			)
-
 		end)
 
 		task.wait(0.5)
-	end
-
-	if LocalPlayer.Team then
-
-		print(
-			"HOÀI HUB: Team = "
-			.. LocalPlayer.Team.Name
-		)
-
-	else
-
-		warn(
-			"HOÀI HUB: Auto Marine timeout"
-		)
-
 	end
 
 end)
@@ -752,11 +582,13 @@ Status.Visible = true
 CurrentStatus = ""
 SetStatus("Waiting...")
 
-print("HOÀI HUB PART 1: Loaded")
---//========================================================
---// HOÀI HUB - PART 2
---// DOJO + DRAGON STATUS CHECKER
---//========================================================
+print("HOÀI HUB PART 1 LOADED")
+--========================================================
+-- HOÀI HUB - PART 2
+-- READ ONLY CHECKER
+-- 8 DOJO BELTS + DRAGONSTORM + DRAGONHEART
+-- CHECK INTERVAL: 0.25s
+--========================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -776,59 +608,65 @@ local function SetStatus(Text)
 end
 
 --========================================================
--- BELTS
+-- 8 BELTS
 --========================================================
 
 local Belts = {
-
 	{
 		Key = "White",
+		ItemName = "Dojo Belt (White)",
 		English = "White Belt",
 		VN = "đai Trắng"
 	},
 
 	{
 		Key = "Yellow",
+		ItemName = "Dojo Belt (Yellow)",
 		English = "Yellow Belt",
 		VN = "đai Vàng"
 	},
 
 	{
 		Key = "Orange",
+		ItemName = "Dojo Belt (Orange)",
 		English = "Orange Belt",
 		VN = "đai Cam"
 	},
 
 	{
 		Key = "Green",
+		ItemName = "Dojo Belt (Green)",
 		English = "Green Belt",
 		VN = "đai Xanh Lá"
 	},
 
 	{
 		Key = "Blue",
+		ItemName = "Dojo Belt (Blue)",
 		English = "Blue Belt",
 		VN = "đai Xanh Dương"
 	},
 
 	{
 		Key = "Purple",
+		ItemName = "Dojo Belt (Purple)",
 		English = "Purple Belt",
 		VN = "đai Tím"
 	},
 
 	{
 		Key = "Red",
+		ItemName = "Dojo Belt (Red)",
 		English = "Red Belt",
 		VN = "đai Đỏ"
 	},
 
 	{
 		Key = "Black",
+		ItemName = "Dojo Belt (Black)",
 		English = "Black Belt",
 		VN = "đai Đen"
 	}
-
 }
 
 --========================================================
@@ -838,30 +676,34 @@ local Belts = {
 local BeltIndex = {}
 
 for Index, Belt in ipairs(Belts) do
-
-	BeltIndex[
-		string.lower(Belt.Key)
-	] = Index
-
+	BeltIndex[Normalize and string.lower(Belt.Key) or Belt.Key] = Index
 end
 
 --========================================================
 -- NORMALIZE
 --========================================================
 
-local function Normalize(Name)
+local function Normalize(Text)
 
-	if typeof(Name) ~= "string" then
+	if typeof(Text) ~= "string" then
 		return ""
 	end
 
-	return string.lower(
-		Name
-			:gsub("^%s+", "")
-			:gsub("%s+$", "")
-			:gsub("%s+", " ")
-	)
+	Text = Text:gsub("^%s+", "")
+	Text = Text:gsub("%s+$", "")
+	Text = Text:gsub("%s+", " ")
 
+	return string.lower(Text)
+end
+
+--========================================================
+-- REBUILD BELT INDEX
+--========================================================
+
+BeltIndex = {}
+
+for Index, Belt in ipairs(Belts) do
+	BeltIndex[Normalize(Belt.Key)] = Index
 end
 
 --========================================================
@@ -895,22 +737,24 @@ end
 -- READ DOJO
 --========================================================
 
-local function ReadDojo()
+local function ReadDojoBelt()
 
-	local Remote = FindDojoRemote()
+	local Remote =
+		FindDojoRemote()
 
 	if not Remote then
 		return nil
 	end
 
-	local Success, Result = pcall(function()
+	local Success, Result =
+		pcall(function()
 
-		return Remote:InvokeServer({
-			NPC = "Dojo Trainer",
-			Command = "RequestQuest"
-		})
+			return Remote:InvokeServer({
+				NPC = "Dojo Trainer",
+				Command = "RequestQuest"
+			})
 
-	end)
+		end)
 
 	if not Success then
 		return nil
@@ -920,15 +764,18 @@ local function ReadDojo()
 		return nil
 	end
 
-	return Result
+	if type(Result.BeltName) ~= "string" then
+		return nil
+	end
 
+	return Result.BeltName
 end
 
 --========================================================
--- CLIENT ITEM CHECK
+-- READ VISIBLE ITEMS
 --========================================================
 
-local function BuildItems()
+local function BuildOwnedItems()
 
 	local Owned = {}
 
@@ -950,7 +797,6 @@ local function BuildItems()
 			end
 
 		end
-
 	end
 
 	Scan(Player.Character)
@@ -971,10 +817,7 @@ local function HasItem(Owned, ...)
 		local Name =
 			select(Index, ...)
 
-		if Owned[
-			Normalize(Name)
-		] then
-
+		if Owned[Normalize(Name)] then
 			return true
 		end
 
@@ -982,6 +825,84 @@ local function HasItem(Owned, ...)
 
 	return false
 end
+
+--========================================================
+-- READ ALL PROGRESS
+--========================================================
+
+local function ReadBloxFruitsProgress()
+
+	local Result = {
+		CurrentBelt = nil,
+		HighestBeltRank = 0,
+		Belts = {},
+		DragonStorm = false,
+		DragonHeart = false
+	}
+
+	--====================================================
+	-- DOJO
+	--====================================================
+
+	local CurrentBelt =
+		ReadDojoBelt()
+
+	Result.CurrentBelt =
+		CurrentBelt
+
+	if type(CurrentBelt) == "string" then
+
+		local CurrentIndex =
+			BeltIndex[Normalize(CurrentBelt)]
+
+		if CurrentIndex then
+
+			Result.HighestBeltRank =
+				CurrentIndex
+
+			for Index, Belt in ipairs(
+				Belts
+			) do
+
+				Result.Belts[
+					Belt.ItemName
+				] =
+					Index <= CurrentIndex
+
+			end
+		end
+	end
+
+	--====================================================
+	-- DRAGON ITEMS
+	--====================================================
+
+	local Owned =
+		BuildOwnedItems()
+
+	Result.DragonStorm =
+		HasItem(
+			Owned,
+			"Dragonstorm",
+			"Dragon Storm"
+		)
+
+	Result.DragonHeart =
+		HasItem(
+			Owned,
+			"Dragonheart",
+			"Dragon Heart"
+		)
+
+	return Result
+end
+
+--========================================================
+-- EXPORT
+--========================================================
+
+_G.HoaiHubReadBloxFruitsProgress =
+	ReadBloxFruitsProgress
 
 --========================================================
 -- STATUS CACHE
@@ -998,47 +919,39 @@ local function ApplyStatus(Text)
 	LastStatus = Text
 
 	SetStatus(Text)
-
 end
 
 --========================================================
--- CHECK PROGRESS
+-- UPDATE STATUS
 --========================================================
 
-local function CheckProgress()
+local function UpdateStatus()
 
-	local Data = ReadDojo()
+	local Data =
+		ReadBloxFruitsProgress()
 
-	if not Data then
+	-- Không đọc được dữ liệu Dojo
+	if not Data.CurrentBelt then
 
-		return
-	end
-
-	local CurrentBelt =
-		Data.BeltName
-
-	if type(CurrentBelt) ~= "string" then
+		ApplyStatus(
+			"Checking Dojo... / Đang kiểm tra Dojo..."
+		)
 
 		return
 	end
 
-	local CurrentIndex =
-		BeltIndex[
-			Normalize(CurrentBelt)
-		]
-
-	if not CurrentIndex then
-		return
-	end
+	local Rank =
+		Data.HighestBeltRank
 
 	--====================================================
-	-- NEXT BELT
+	-- CÒN ĐAI
 	--====================================================
 
-	if CurrentIndex < #Belts then
+	if Rank > 0
+		and Rank < #Belts then
 
 		local NextBelt =
-			Belts[CurrentIndex + 1]
+			Belts[Rank + 1]
 
 		ApplyStatus(
 			"Getting "
@@ -1055,66 +968,78 @@ local function CheckProgress()
 	-- BLACK -> DRAGONSTORM
 	--====================================================
 
-	local Owned = BuildItems()
+	if Rank >= 8 then
 
-	if not HasItem(
-		Owned,
-		"Dragonstorm",
-		"Dragon Storm"
-	) then
+		if not Data.DragonStorm then
+
+			ApplyStatus(
+				"Getting Dragonstorm / Đang lấy Dragonstorm..."
+			)
+
+			return
+		end
+
+		--================================================
+		-- DRAGONSTORM -> DRAGONHEART
+		--================================================
+
+		if not Data.DragonHeart then
+
+			ApplyStatus(
+				"Getting Dragonheart / Đang lấy Dragonheart..."
+			)
+
+			return
+		end
+
+		--================================================
+		-- COMPLETE
+		--================================================
 
 		ApplyStatus(
-			"Getting Dragonstorm / Đang lấy Dragonstorm..."
+			"Complete / Đã hoàn thành!"
 		)
 
 		return
 	end
-
-	--====================================================
-	-- DRAGONHEART
-	--====================================================
-
-	if not HasItem(
-		Owned,
-		"Dragonheart",
-		"Dragon Heart"
-	) then
-
-		ApplyStatus(
-			"Getting Dragonheart / Đang lấy Dragonheart..."
-		)
-
-		return
-	end
-
-	--====================================================
-	-- COMPLETE
-	--====================================================
 
 	ApplyStatus(
-		"Complete / Đã hoàn thành!"
+		"Checking Dojo... / Đang kiểm tra Dojo..."
 	)
-
 end
 
--- Export
-_G.HoaiHubReadDojo = ReadDojo
-_G.HoaiHubCheckProgress = CheckProgress
+--========================================================
+-- EXPORT CHECK
+--========================================================
+
+_G.HoaiHubCheckProgress =
+	UpdateStatus
 
 --========================================================
 -- CHECK LOOP
+-- 0.25s / LẦN
 --========================================================
 
 task.spawn(function()
 
 	while Player.Parent do
 
-		pcall(CheckProgress)
+		local Success, ErrorMessage =
+			pcall(UpdateStatus)
+
+		if not Success then
+
+			warn(
+				"HOÀI HUB CHECK ERROR:",
+				ErrorMessage
+			)
+
+		end
 
 		task.wait(0.25)
-
 	end
 
 end)
 
-print("HOÀI HUB PART 2: Dojo Checker Loaded")
+print("HOÀI HUB PART 2 LOADED")
+print("CHECK INTERVAL: 0.25s")
