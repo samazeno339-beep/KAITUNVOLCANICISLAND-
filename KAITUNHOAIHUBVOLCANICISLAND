@@ -18,15 +18,16 @@ local Camera = workspace.CurrentCamera
 
 local CONFIG = {
 	AimAssist = false,
-	AimFOV = 140,
-	AimSmooth = 0.15,
+	AimFOV = 160,
+	AimSmooth = 0.25,
 
-	ESPPlayer = false,
+	ESPEnemy = false,
+	ESPTeam = false,
 	ESPNPC = false,
 	ESPChest = false,
 
 	Fly = false,
-	FlySpeed = 55,
+	FlySpeed = 70,
 	FlyUp = false,
 	FlyDown = false,
 
@@ -49,7 +50,7 @@ Gui.IgnoreGuiInset = true
 Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 --========================================================--
--- HOAIHUB OPEN BUTTON
+-- OPEN BUTTON
 --========================================================--
 
 local OpenButton = Instance.new("TextButton")
@@ -80,8 +81,8 @@ OpenStroke.Parent = OpenButton
 
 local Main = Instance.new("Frame")
 Main.Name = "Main"
-Main.Size = UDim2.fromOffset(340, 360)
-Main.Position = UDim2.new(0.5, -170, 0.5, -180)
+Main.Size = UDim2.fromOffset(340, 390)
+Main.Position = UDim2.new(0.5, -170, 0.5, -195)
 Main.BackgroundColor3 = Color3.fromRGB(22, 16, 28)
 Main.BorderSizePixel = 0
 Main.Parent = Gui
@@ -131,7 +132,7 @@ HideCorner.CornerRadius = UDim.new(0, 8)
 HideCorner.Parent = HideButton
 
 --========================================================--
--- TAB BAR
+-- TABS
 --========================================================--
 
 local TabBar = Instance.new("Frame")
@@ -152,16 +153,11 @@ TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 TabLayout.Padding = UDim.new(0, 4)
 TabLayout.Parent = TabBar
 
---========================================================--
--- PAGES
---========================================================--
-
 local Pages = {}
 
 local function CreateTab(Name)
 
 	local Button = Instance.new("TextButton")
-	Button.Name = Name .. "Tab"
 	Button.Size = UDim2.fromOffset(76, 30)
 	Button.BackgroundColor3 = Color3.fromRGB(42, 30, 50)
 	Button.BorderSizePixel = 0
@@ -171,12 +167,11 @@ local function CreateTab(Name)
 	Button.Font = Enum.Font.GothamBold
 	Button.Parent = TabBar
 
-	local ButtonCorner = Instance.new("UICorner")
-	ButtonCorner.CornerRadius = UDim.new(0, 7)
-	ButtonCorner.Parent = Button
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 7)
+	Corner.Parent = Button
 
 	local Page = Instance.new("ScrollingFrame")
-	Page.Name = Name .. "Page"
 	Page.Size = UDim2.new(1, -16, 1, -92)
 	Page.Position = UDim2.fromOffset(8, 86)
 	Page.BackgroundTransparency = 1
@@ -196,7 +191,7 @@ local function CreateTab(Name)
 			0,
 			0,
 			0,
-			Layout.AbsoluteContentSize.Y + 8
+			Layout.AbsoluteContentSize.Y + 10
 		)
 	end)
 
@@ -216,10 +211,8 @@ local function CreateTab(Name)
 		end
 
 		Page.Visible = true
-
 		Button.BackgroundColor3 =
 			Color3.fromRGB(105, 50, 125)
-
 		Button.TextColor3 =
 			Color3.fromRGB(255, 220, 255)
 	end)
@@ -258,7 +251,7 @@ FOVStroke.Thickness = 2
 FOVStroke.Parent = FOV
 
 --========================================================--
--- FLY MOBILE BUTTONS
+-- FLY MOBILE CONTROLS
 --========================================================--
 
 local FlyControls = Instance.new("Frame")
@@ -272,7 +265,6 @@ FlyControls.Parent = Gui
 local FlyLayout = Instance.new("UIListLayout")
 FlyLayout.Padding = UDim.new(0, 6)
 FlyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-FlyLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 FlyLayout.Parent = FlyControls
 
 local function CreateFlyButton(Text)
@@ -303,7 +295,6 @@ end
 local FlyUpButton = CreateFlyButton("▲ BAY")
 local FlyDownButton = CreateFlyButton("▼ XUỐNG")
 
--- Nhấn giữ để bay lên / xuống
 local function BindHold(Button, Property)
 
 	Button.InputBegan:Connect(function(Input)
@@ -388,21 +379,49 @@ local function AddESP(Model, Color, Text)
 	Label.Parent = Billboard
 end
 
+--========================================================--
+-- TEAM CHECK
+--========================================================--
+
+local function IsTeammate(Player)
+
+	if not LocalPlayer.Team or not Player.Team then
+		return false
+	end
+
+	return LocalPlayer.Team == Player.Team
+end
+
+local function IsEnemy(Player)
+
+	return not IsTeammate(Player)
+end
+
 local function UpdateESP()
 
 	ClearESP()
 
-	if CONFIG.ESPPlayer then
+	for _, Player in ipairs(Players:GetPlayers()) do
 
-		for _, Player in ipairs(Players:GetPlayers()) do
+		if Player ~= LocalPlayer
+			and Player.Character then
 
-			if Player ~= LocalPlayer and Player.Character then
+			if CONFIG.ESPTeam and IsTeammate(Player) then
 
 				AddESP(
 					Player.Character,
-					Color3.fromRGB(255, 100, 120),
-					"PLAYER: " .. Player.Name
+					Color3.fromRGB(80, 180, 255),
+					"TEAM: " .. Player.Name
 				)
+
+			elseif CONFIG.ESPEnemy and IsEnemy(Player) then
+
+				AddESP(
+					Player.Character,
+					Color3.fromRGB(255, 80, 100),
+					"ENEMY: " .. Player.Name
+				)
+
 			end
 		end
 	end
@@ -450,16 +469,10 @@ local function UpdateESP()
 end
 
 --========================================================--
--- AIM ASSIST
+-- AIM - ENEMY ONLY
 --========================================================--
 
-local function GetNearestPlayer()
-
-	local Character = LocalPlayer.Character
-
-	if not Character then
-		return nil
-	end
+local function GetNearestEnemy()
 
 	local Center = Vector2.new(
 		Camera.ViewportSize.X / 2,
@@ -472,7 +485,8 @@ local function GetNearestPlayer()
 	for _, Player in ipairs(Players:GetPlayers()) do
 
 		if Player ~= LocalPlayer
-			and Player.Character then
+			and Player.Character
+			and IsEnemy(Player) then
 
 			local Humanoid =
 				Player.Character:FindFirstChildOfClass("Humanoid")
@@ -485,7 +499,9 @@ local function GetNearestPlayer()
 				and Humanoid.Health > 0 then
 
 				local ScreenPosition, Visible =
-					Camera:WorldToViewportPoint(Root.Position)
+					Camera:WorldToViewportPoint(
+						Root.Position
+					)
 
 				if Visible then
 
@@ -515,7 +531,7 @@ RunService.RenderStepped:Connect(function()
 		return
 	end
 
-	local Target = GetNearestPlayer()
+	local Target = GetNearestEnemy()
 
 	if Target then
 
@@ -559,7 +575,6 @@ local function StartFly()
 	StopFly()
 
 	local Character = LocalPlayer.Character
-
 	if not Character then
 		return
 	end
@@ -567,7 +582,10 @@ local function StartFly()
 	local Root =
 		Character:FindFirstChild("HumanoidRootPart")
 
-	if not Root then
+	local Humanoid =
+		Character:FindFirstChildOfClass("Humanoid")
+
+	if not Root or not Humanoid then
 		return
 	end
 
@@ -590,42 +608,32 @@ local function StartFly()
 				return
 			end
 
-			local Direction = Vector3.zero
+			-- Joystick mobile / WASD PC
+			local Direction =
+				Humanoid.MoveDirection
 
-			if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-				Direction += Camera.CFrame.LookVector
+			-- BAY / XUỐNG
+			local Vertical = 0
+
+			if CONFIG.FlyUp
+				or UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+
+				Vertical += 1
 			end
 
-			if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-				Direction -= Camera.CFrame.LookVector
+			if CONFIG.FlyDown
+				or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+
+				Vertical -= 1
 			end
 
-			if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-				Direction -= Camera.CFrame.RightVector
-			end
-
-			if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-				Direction += Camera.CFrame.RightVector
-			end
-
-			if UserInputService:IsKeyDown(Enum.KeyCode.Space)
-				or CONFIG.FlyUp then
-
-				Direction += Vector3.yAxis
-			end
-
-			if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
-				or CONFIG.FlyDown then
-
-				Direction -= Vector3.yAxis
-			end
-
-			if Direction.Magnitude > 0 then
-				Direction = Direction.Unit
-			end
-
-			FlyVelocity.Velocity =
+			local Velocity =
 				Direction * CONFIG.FlySpeed
+
+			Velocity +=
+				Vector3.new(0, Vertical * CONFIG.FlySpeed, 0)
+
+			FlyVelocity.Velocity = Velocity
 		end)
 end
 --========================================================--
@@ -742,81 +750,143 @@ local function ApplyFixLag()
 end
 
 --========================================================--
--- SPEED
+-- VALUE INPUT
 --========================================================--
 
-local function SetSpeed()
+local function CreateValueBox(
+	Parent,
+	Text,
+	DefaultValue,
+	Callback
+)
 
-	local Character = LocalPlayer.Character
+	local Holder = Instance.new("Frame")
+	Holder.Size = UDim2.new(1, -4, 0, 38)
+	Holder.BackgroundColor3 =
+		Color3.fromRGB(39, 28, 46)
+	Holder.BorderSizePixel = 0
+	Holder.Parent = Parent
 
-	if not Character then
-		return
+	local HolderCorner = Instance.new("UICorner")
+	HolderCorner.CornerRadius = UDim.new(0, 8)
+	HolderCorner.Parent = Holder
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -105, 1, 0)
+	Label.Position = UDim2.fromOffset(10, 0)
+	Label.BackgroundTransparency = 1
+	Label.Text = Text
+	Label.TextColor3 =
+		Color3.fromRGB(235, 220, 245)
+	Label.TextSize = 13
+	Label.Font = Enum.Font.Gotham
+	Label.TextXAlignment =
+		Enum.TextXAlignment.Left
+	Label.Parent = Holder
+
+	local Box = Instance.new("TextBox")
+	Box.Size = UDim2.fromOffset(85, 28)
+	Box.Position = UDim2.new(1, -92, 0.5, -14)
+	Box.BackgroundColor3 =
+		Color3.fromRGB(27, 20, 33)
+	Box.BorderSizePixel = 0
+	Box.Text = tostring(DefaultValue)
+	Box.TextColor3 =
+		Color3.fromRGB(220, 150, 255)
+	Box.TextSize = 13
+	Box.Font = Enum.Font.GothamBold
+	Box.ClearTextOnFocus = false
+	Box.Parent = Holder
+
+	local BoxCorner = Instance.new("UICorner")
+	BoxCorner.CornerRadius = UDim.new(0, 6)
+	BoxCorner.Parent = Box
+
+	local function Apply()
+
+		local Number =
+			tonumber(Box.Text)
+
+		if Number then
+
+			Number = math.clamp(
+				Number,
+				0,
+				1000
+			)
+
+			Box.Text = tostring(Number)
+			Callback(Number)
+
+		else
+
+			Box.Text = tostring(DefaultValue)
+			Callback(DefaultValue)
+
+		end
 	end
 
-	local Humanoid =
-		Character:FindFirstChildOfClass("Humanoid")
+	Box.FocusLost:Connect(Apply)
 
-	if Humanoid then
-
-		TweenService:Create(
-			Humanoid,
-			TweenInfo.new(
-				0.45,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
-			{
-				WalkSpeed = CONFIG.Speed
-			}
-		):Play()
-	end
+	return Box
 end
 
 --========================================================--
--- JUMP
+-- SPEED / JUMP / FLY SPEED
 --========================================================--
 
-local function SetJump()
+CreateValueBox(
+	MoveTab,
+	"Speed",
+	CONFIG.Speed,
+	function(Value)
 
-	local Character = LocalPlayer.Character
+		CONFIG.Speed = Value
 
-	if not Character then
-		return
 	end
+)
 
-	local Humanoid =
-		Character:FindFirstChildOfClass("Humanoid")
+CreateValueBox(
+	MoveTab,
+	"Jump Power",
+	CONFIG.JumpPower,
+	function(Value)
 
-	if Humanoid then
+		CONFIG.JumpPower = Value
 
-		Humanoid.UseJumpPower = true
-
-		TweenService:Create(
-			Humanoid,
-			TweenInfo.new(
-				0.45,
-				Enum.EasingStyle.Quad,
-				Enum.EasingDirection.Out
-			),
-			{
-				JumpPower = CONFIG.JumpPower
-			}
-		):Play()
 	end
-end
+)
+
+CreateValueBox(
+	MoveTab,
+	"Fly Speed",
+	CONFIG.FlySpeed,
+	function(Value)
+
+		CONFIG.FlySpeed = Value
+
+	end
+)
 
 --========================================================--
 -- TOGGLE
 --========================================================--
 
-local function CreateToggle(Parent, Text, Callback)
+local function CreateToggle(
+	Parent,
+	Text,
+	Callback
+)
 
 	local Button = Instance.new("TextButton")
 	Button.Size = UDim2.new(1, -4, 0, 35)
-	Button.BackgroundColor3 = Color3.fromRGB(39, 28, 46)
+	Button.BackgroundColor3 =
+		Color3.fromRGB(39, 28, 46)
 	Button.BorderSizePixel = 0
-	Button.Text = Text .. "  [OFF]"
-	Button.TextColor3 = Color3.fromRGB(235, 220, 245)
+	Button.Text =
+		Text .. "  [OFF]"
+	Button.TextColor3 =
+		Color3.fromRGB(235, 220, 245)
 	Button.TextSize = 13
 	Button.Font = Enum.Font.Gotham
 	Button.Parent = Parent
@@ -833,13 +903,17 @@ local function CreateToggle(Parent, Text, Callback)
 
 		if Enabled then
 
-			Button.Text = Text .. "  [ON]"
+			Button.Text =
+				Text .. "  [ON]"
+
 			Button.BackgroundColor3 =
 				Color3.fromRGB(100, 50, 125)
 
 		else
 
-			Button.Text = Text .. "  [OFF]"
+			Button.Text =
+				Text .. "  [OFF]"
+
 			Button.BackgroundColor3 =
 				Color3.fromRGB(39, 28, 46)
 		end
@@ -851,17 +925,16 @@ local function CreateToggle(Parent, Text, Callback)
 end
 
 --========================================================--
--- COMBAT TAB
+-- COMBAT
 --========================================================--
 
 CreateToggle(
 	CombatTab,
-	"Aim Assist",
+	"Aim Enemy",
 	function(Value)
 
 		CONFIG.AimAssist = Value
 		FOV.Visible = Value
-
 	end
 )
 
@@ -870,12 +943,8 @@ CreateToggle(
 	"Aim FOV",
 	function(Value)
 
-		if CONFIG.AimAssist then
-			FOV.Visible = Value
-		else
-			FOV.Visible = false
-		end
-
+		FOV.Visible =
+			Value and CONFIG.AimAssist
 	end
 )
 
@@ -885,22 +954,30 @@ CreateToggle(
 	function(Value)
 
 		CONFIG.AutoFarm = Value
-
 	end
 )
 
 --========================================================--
--- VISUAL TAB
+-- VISUAL
 --========================================================--
 
 CreateToggle(
 	VisualTab,
-	"ESP Player",
+	"ESP Enemy",
 	function(Value)
 
-		CONFIG.ESPPlayer = Value
+		CONFIG.ESPEnemy = Value
 		UpdateESP()
+	end
+)
 
+CreateToggle(
+	VisualTab,
+	"ESP Team",
+	function(Value)
+
+		CONFIG.ESPTeam = Value
+		UpdateESP()
 	end
 )
 
@@ -911,7 +988,6 @@ CreateToggle(
 
 		CONFIG.ESPNPC = Value
 		UpdateESP()
-
 	end
 )
 
@@ -922,12 +998,11 @@ CreateToggle(
 
 		CONFIG.ESPChest = Value
 		UpdateESP()
-
 	end
 )
 
 --========================================================--
--- MOVE TAB
+-- MOVE
 --========================================================--
 
 CreateToggle(
@@ -942,7 +1017,6 @@ CreateToggle(
 		else
 			StopFly()
 		end
-
 	end
 )
 
@@ -952,9 +1026,32 @@ CreateToggle(
 	function(Value)
 
 		if Value then
-			SetSpeed()
-		end
 
+			local Character =
+				LocalPlayer.Character
+
+			local Humanoid =
+				Character
+				and Character:FindFirstChildOfClass(
+					"Humanoid"
+				)
+
+			if Humanoid then
+
+				TweenService:Create(
+					Humanoid,
+					TweenInfo.new(
+						0.45,
+						Enum.EasingStyle.Quad,
+						Enum.EasingDirection.Out
+					),
+					{
+						WalkSpeed =
+							CONFIG.Speed
+					}
+				):Play()
+			end
+		end
 	end
 )
 
@@ -964,14 +1061,39 @@ CreateToggle(
 	function(Value)
 
 		if Value then
-			SetJump()
-		end
 
+			local Character =
+				LocalPlayer.Character
+
+			local Humanoid =
+				Character
+				and Character:FindFirstChildOfClass(
+					"Humanoid"
+				)
+
+			if Humanoid then
+
+				Humanoid.UseJumpPower = true
+
+				TweenService:Create(
+					Humanoid,
+					TweenInfo.new(
+						0.45,
+						Enum.EasingStyle.Quad,
+						Enum.EasingDirection.Out
+					),
+					{
+						JumpPower =
+							CONFIG.JumpPower
+					}
+				):Play()
+			end
+		end
 	end
 )
 
 --========================================================--
--- MISC TAB
+-- MISC
 --========================================================--
 
 CreateToggle(
@@ -984,7 +1106,6 @@ CreateToggle(
 		if Value then
 			ApplyFixLag()
 		end
-
 	end
 )
 
@@ -1008,6 +1129,8 @@ HideButton.MouseButton1Click:Connect(function()
 
 	Main.Visible = false
 	OpenButton.Visible = true
+	FlyControls.Visible = false
+	FOV.Visible = false
 
 end)
 
@@ -1016,22 +1139,33 @@ OpenButton.MouseButton1Click:Connect(function()
 	Main.Visible = true
 	OpenButton.Visible = false
 
+	if CONFIG.Fly then
+		FlyControls.Visible = true
+	end
+
 end)
 
 --========================================================--
 -- RIGHT CONTROL
 --========================================================--
 
-UserInputService.InputBegan:Connect(function(Input, Processed)
+UserInputService.InputBegan:Connect(function(
+	Input,
+	Processed
+)
 
 	if Processed then
 		return
 	end
 
-	if Input.KeyCode == Enum.KeyCode.RightControl then
+	if Input.KeyCode ==
+		Enum.KeyCode.RightControl then
 
-		Main.Visible = not Main.Visible
-		OpenButton.Visible = not Main.Visible
+		Main.Visible =
+			not Main.Visible
+
+		OpenButton.Visible =
+			not Main.Visible
 
 	end
 end)
@@ -1046,8 +1180,10 @@ local StartPosition
 
 Header.InputBegan:Connect(function(Input)
 
-	if Input.UserInputType == Enum.UserInputType.MouseButton1
-		or Input.UserInputType == Enum.UserInputType.Touch then
+	if Input.UserInputType ==
+		Enum.UserInputType.MouseButton1
+		or Input.UserInputType ==
+		Enum.UserInputType.Touch then
 
 		Dragging = true
 		DragStart = Input.Position
@@ -1070,8 +1206,10 @@ UserInputService.InputChanged:Connect(function(Input)
 		return
 	end
 
-	if Input.UserInputType == Enum.UserInputType.MouseMovement
-		or Input.UserInputType == Enum.UserInputType.Touch then
+	if Input.UserInputType ==
+		Enum.UserInputType.MouseMovement
+		or Input.UserInputType ==
+		Enum.UserInputType.Touch then
 
 		local Delta =
 			Input.Position - DragStart
@@ -1086,7 +1224,7 @@ UserInputService.InputChanged:Connect(function(Input)
 end)
 
 --========================================================--
--- RESPAWN
+-- RESPAWN / TEAM UPDATE
 --========================================================--
 
 LocalPlayer.CharacterAdded:Connect(function()
@@ -1097,31 +1235,38 @@ LocalPlayer.CharacterAdded:Connect(function()
 		StartFly()
 	end
 
-	if CONFIG.ESPPlayer
+	if CONFIG.ESPEnemy
+		or CONFIG.ESPTeam
 		or CONFIG.ESPNPC
 		or CONFIG.ESPChest then
 
 		UpdateESP()
 	end
+end)
 
+LocalPlayer:GetPropertyChangedSignal("Team"):Connect(function()
+
+	if CONFIG.ESPEnemy or CONFIG.ESPTeam then
+		UpdateESP()
+	end
 end)
 
 --========================================================--
--- AUTO UPDATE ESP
+-- ESP REFRESH
 --========================================================--
 
 task.spawn(function()
 
 	while task.wait(2) do
 
-		if CONFIG.ESPPlayer
+		if CONFIG.ESPEnemy
+			or CONFIG.ESPTeam
 			or CONFIG.ESPNPC
 			or CONFIG.ESPChest then
 
 			UpdateESP()
 		end
 	end
-
 end)
 
 --========================================================--
@@ -1132,6 +1277,7 @@ print("================================")
 print("          HOAIHUB")
 print("       hoài làm script")
 print("================================")
-print("Fly Mobile: ▲ BAY / ▼ XUỐNG")
-print("RightControl: Hide / Show")
+print("Aim: ENEMY ONLY")
+print("Fly: Joystick/WASD + BAY/XUONG")
+print("Speed / Jump / Fly Speed: Editable")
 print("================================")
