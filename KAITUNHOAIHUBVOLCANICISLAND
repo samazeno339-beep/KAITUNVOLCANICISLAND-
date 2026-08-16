@@ -1,757 +1,735 @@
---========================================================
--- HOÀI HUB - PART 1
--- UI + LOGO + SAFE FIX LAG + AUTO MARINES
---========================================================
+--//====================================================--
+--//              HOÀI LÀM SCRIPT
+--//        Roblox Studio - LocalScript
+--//====================================================--
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local LP = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
---========================================================
+--====================================================--
 -- CONFIG
---========================================================
+--====================================================--
 
 local CONFIG = {
-	Title = "HOÀI HUB",
-	Subtitle = "Kaitun volcanic island A-Z",
+	Title = "hoài làm script",
 
-	Logo = "rbxassetid://111921165456492",
+	ESPPlayer = false,
+	ESPNPC = false,
+	ESPChest = false,
 
-	Accent = Color3.fromRGB(165, 70, 255),
-	AccentLight = Color3.fromRGB(215, 150, 255),
-	Background = Color3.fromRGB(13, 10, 18),
+	AimAssist = false,
+	AimFOV = 150,
+	AimSmooth = 0.15,
 
-	MenuSize = UDim2.fromOffset(310, 120),
+	Fly = false,
+	FlySpeed = 55,
 
-	MenuPosition = UDim2.new(
-		0.5, -155,
-		0.5, -60
-	),
+	AutoFarm = false,
 
-	StatusPosition = UDim2.new(
-		0.5, -155,
-		0.5, -105
-	),
+	Speed = 16,
+	Jump = 50,
 
-	FloatingPosition = UDim2.new(
-		0, 24,
-		0.5, -27
-	),
-
-	Team = "Marines"
+	FixLag = false,
 }
 
---========================================================
--- REMOVE OLD GUI
---========================================================
+--====================================================--
+-- UI
+--====================================================--
 
-local OldGui = PlayerGui:FindFirstChild("HoaiHub")
-
-if OldGui then
-	OldGui:Destroy()
-end
-
---========================================================
--- SCREEN GUI
---========================================================
-
-local ScreenGui = Instance.new("ScreenGui")
-
-ScreenGui.Name = "HoaiHub"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = true
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = PlayerGui
-
---========================================================
--- STATUS
---========================================================
-
-local Status = Instance.new("TextLabel")
-
-Status.Name = "Status"
-Status.Size = UDim2.fromOffset(310, 24)
-Status.Position = CONFIG.StatusPosition
-
-Status.BackgroundTransparency = 1
-Status.Font = Enum.Font.GothamMedium
-
-Status.Text = "STATUS: Waiting..."
-Status.TextColor3 = CONFIG.AccentLight
-Status.TextSize = 12
-Status.TextXAlignment = Enum.TextXAlignment.Center
-
-Status.ZIndex = 50
-Status.Parent = ScreenGui
-
-local CurrentStatus = ""
-
-local function SetStatus(Text)
-	Text = tostring(Text)
-
-	if CurrentStatus == Text then
-		return
-	end
-
-	CurrentStatus = Text
-	Status.Text = "STATUS: " .. Text
-end
-
-_G.HoaiHubSetStatus = SetStatus
-
---========================================================
--- MAIN
---========================================================
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "HoaiLamScript"
+Gui.ResetOnSpawn = false
+Gui.Parent = LP:WaitForChild("PlayerGui")
 
 local Main = Instance.new("Frame")
-
 Main.Name = "Main"
-Main.Size = CONFIG.MenuSize
-Main.Position = CONFIG.MenuPosition
-
-Main.BackgroundColor3 = CONFIG.Background
-Main.BackgroundTransparency = 0.03
+Main.Size = UDim2.new(0, 430, 0, 500)
+Main.Position = UDim2.new(0.5, -215, 0.5, -250)
+Main.BackgroundColor3 = Color3.fromRGB(25, 18, 32)
 Main.BorderSizePixel = 0
-
-Main.ZIndex = 10
-Main.Parent = ScreenGui
+Main.Parent = Gui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 9)
+Corner.CornerRadius = UDim.new(0, 14)
 Corner.Parent = Main
 
 local Stroke = Instance.new("UIStroke")
-Stroke.Color = CONFIG.Accent
-Stroke.Thickness = 2.5
+Stroke.Color = Color3.fromRGB(190, 100, 255)
+Stroke.Thickness = 2
 Stroke.Parent = Main
 
---========================================================
--- LOGO
---========================================================
-
-local Logo = Instance.new("ImageLabel")
-
-Logo.Name = "Logo"
-Logo.BackgroundTransparency = 1
-Logo.Size = UDim2.fromOffset(42, 42)
-Logo.Position = UDim2.fromOffset(10, 10)
-
-Logo.Image = CONFIG.Logo
-Logo.ScaleType = Enum.ScaleType.Fit
-
-Logo.ZIndex = 11
-Logo.Parent = Main
-
---========================================================
--- TITLE
---========================================================
-
 local Title = Instance.new("TextLabel")
-
+Title.Size = UDim2.new(1, -50, 0, 45)
+Title.Position = UDim2.new(0, 15, 0, 5)
 Title.BackgroundTransparency = 1
-Title.Position = UDim2.fromOffset(50, 10)
-Title.Size = UDim2.new(1, -60, 0, 30)
-
-Title.Font = Enum.Font.GothamBold
 Title.Text = CONFIG.Title
-
-Title.TextColor3 = Color3.fromRGB(245, 238, 255)
-Title.TextSize = 19
-Title.TextXAlignment = Enum.TextXAlignment.Center
-
-Title.ZIndex = 11
+Title.TextColor3 = Color3.fromRGB(230, 190, 255)
+Title.TextSize = 23
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = Main
 
---========================================================
--- SUBTITLE
---========================================================
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 35, 0, 35)
+Close.Position = UDim2.new(1, -42, 0, 10)
+Close.BackgroundColor3 = Color3.fromRGB(90, 35, 105)
+Close.Text = "×"
+Close.TextColor3 = Color3.new(1,1,1)
+Close.TextSize = 24
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Main
 
-local Subtitle = Instance.new("TextLabel")
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 10)
 
-Subtitle.BackgroundTransparency = 1
-Subtitle.Position = UDim2.fromOffset(10, 56)
-Subtitle.Size = UDim2.new(1, -20, 0, 28)
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, -20, 1, -65)
+Container.Position = UDim2.new(0, 10, 0, 55)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.ScrollBarThickness = 4
+Container.CanvasSize = UDim2.new()
+Container.Parent = Main
 
-Subtitle.Font = Enum.Font.GothamSemibold
-Subtitle.Text = CONFIG.Subtitle
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0, 7)
+Layout.Parent = Container
 
-Subtitle.TextColor3 = Color3.fromRGB(205, 175, 235)
-Subtitle.TextSize = 13
-Subtitle.TextXAlignment = Enum.TextXAlignment.Center
-
-Subtitle.ZIndex = 11
-Subtitle.Parent = Main
-
---========================================================
--- FLOATING LOGO
---========================================================
-
-local FloatButton = Instance.new("ImageButton")
-
-FloatButton.Name = "FloatingLogo"
-FloatButton.Size = UDim2.fromOffset(55, 55)
-FloatButton.Position = CONFIG.FloatingPosition
-
-FloatButton.BackgroundColor3 = CONFIG.Background
-FloatButton.BorderSizePixel = 0
-
-FloatButton.Image = CONFIG.Logo
-FloatButton.ScaleType = Enum.ScaleType.Fit
-FloatButton.AutoButtonColor = false
-
-FloatButton.ZIndex = 100
-FloatButton.Parent = ScreenGui
-
-local FloatCorner = Instance.new("UICorner")
-FloatCorner.CornerRadius = UDim.new(1, 0)
-FloatCorner.Parent = FloatButton
-
-local FloatStroke = Instance.new("UIStroke")
-FloatStroke.Color = CONFIG.Accent
-FloatStroke.Thickness = 2.5
-FloatStroke.Parent = FloatButton
-
---========================================================
--- SHOW / HIDE
---========================================================
-
-local MenuVisible = true
-
-local function ShowMenu()
-	MenuVisible = true
-	Main.Visible = true
-	Main.Size = UDim2.fromOffset(0, 0)
-
-	local Tween = TweenService:Create(
-		Main,
-		TweenInfo.new(
-			0.22,
-			Enum.EasingStyle.Back,
-			Enum.EasingDirection.Out
-		),
-		{Size = CONFIG.MenuSize}
+Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	Container.CanvasSize = UDim2.new(
+		0,
+		0,
+		0,
+		Layout.AbsoluteContentSize.Y + 10
 	)
-
-	Tween:Play()
-end
-
-local function HideMenu()
-	MenuVisible = false
-
-	local Tween = TweenService:Create(
-		Main,
-		TweenInfo.new(
-			0.16,
-			Enum.EasingStyle.Quad,
-			Enum.EasingDirection.In
-		),
-		{Size = UDim2.fromOffset(0, 0)}
-	)
-
-	Tween:Play()
-
-	Tween.Completed:Connect(function()
-		if not MenuVisible then
-			Main.Visible = false
-		end
-	end)
-end
-
-FloatButton.MouseButton1Click:Connect(function()
-	if MenuVisible then
-		HideMenu()
-	else
-		ShowMenu()
-	end
 end)
 
---========================================================
--- DRAG LOGO
---========================================================
+--====================================================--
+-- DRAG UI
+--====================================================--
 
-local Dragging = false
-local DragStart
-local StartPosition
+local dragging = false
+local dragStart
+local startPos
 
-FloatButton.InputBegan:Connect(function(Input)
+Title.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
 
-	if Input.UserInputType == Enum.UserInputType.MouseButton1
-		or Input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = Main.Position
 
-		Dragging = true
-		DragStart = Input.Position
-		StartPosition = FloatButton.Position
-
-		Input.Changed:Connect(function()
-			if Input.UserInputState == Enum.UserInputState.End then
-				Dragging = false
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
 			end
 		end)
 	end
 end)
 
-UserInputService.InputChanged:Connect(function(Input)
-
-	if not Dragging then
+UserInputService.InputChanged:Connect(function(input)
+	if not dragging then
 		return
 	end
 
-	if Input.UserInputType == Enum.UserInputType.MouseMovement
-		or Input.UserInputType == Enum.UserInputType.Touch then
+	if input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch then
 
-		local Delta = Input.Position - DragStart
+		local delta = input.Position - dragStart
 
-		FloatButton.Position = UDim2.new(
-			StartPosition.X.Scale,
-			StartPosition.X.Offset + Delta.X,
-			StartPosition.Y.Scale,
-			StartPosition.Y.Offset + Delta.Y
+		Main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + delta.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + delta.Y
 		)
 	end
 end)
 
---========================================================
--- SAFE FIX LAG
---========================================================
-
-local function DisableEffect(Object)
-
-	if Object:IsA("ParticleEmitter")
-		or Object:IsA("Trail")
-		or Object:IsA("Beam")
-		or Object:IsA("Fire")
-		or Object:IsA("Smoke")
-		or Object:IsA("Sparkles")
-		or Object:IsA("Highlight") then
-
-		pcall(function()
-			Object.Enabled = false
-		end)
-
-		return
-	end
-
-	if Object:IsA("BloomEffect")
-		or Object:IsA("BlurEffect")
-		or Object:IsA("ColorCorrectionEffect")
-		or Object:IsA("DepthOfFieldEffect")
-		or Object:IsA("SunRaysEffect") then
-
-		pcall(function()
-			Object.Enabled = false
-		end)
-	end
-end
-
-local function OptimizePart(Object)
-
-	if not Object:IsA("BasePart") then
-		return
-	end
-
-	pcall(function()
-		Object.Material = Enum.Material.SmoothPlastic
-		Object.CastShadow = false
-		Object.Reflectance = 0
-	end)
-end
-
-local function HideTexture(Object)
-
-	if Object:IsA("Texture")
-		or Object:IsA("Decal") then
-
-		pcall(function()
-			Object.Transparency = 1
-		end)
-	end
-end
-
-local function OptimizeObject(Object)
-
-	if Object:IsDescendantOf(PlayerGui) then
-		return
-	end
-
-	DisableEffect(Object)
-	OptimizePart(Object)
-	HideTexture(Object)
-end
-
---========================================================
--- LIGHTING
---========================================================
-
-pcall(function()
-	Lighting.GlobalShadows = false
-	Lighting.EnvironmentDiffuseScale = 0
-	Lighting.EnvironmentSpecularScale = 0
-	Lighting.FogEnd = 100000
+Close.MouseButton1Click:Connect(function()
+	Main.Visible = false
 end)
 
-for _, Object in ipairs(Lighting:GetChildren()) do
-	DisableEffect(Object)
-end
+--====================================================--
+-- BUTTON
+--====================================================--
 
-Lighting.ChildAdded:Connect(function(Object)
-	task.defer(function()
-		if Object.Parent then
-			DisableEffect(Object)
-		end
-	end)
-end)
+local function CreateToggle(text, callback)
+	local Button = Instance.new("TextButton")
 
---========================================================
--- WORKSPACE
---========================================================
+	Button.Size = UDim2.new(1, -5, 0, 40)
+	Button.BackgroundColor3 = Color3.fromRGB(43, 30, 52)
+	Button.BorderSizePixel = 0
+	Button.Text = text .. ": OFF"
+	Button.TextColor3 = Color3.fromRGB(235, 220, 245)
+	Button.TextSize = 16
+	Button.Font = Enum.Font.Gotham
+	Button.Parent = Container
 
-for _, Object in ipairs(Workspace:GetDescendants()) do
-	OptimizeObject(Object)
-end
+	Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 9)
 
-Workspace.DescendantAdded:Connect(function(Object)
+	local enabled = false
 
-	task.defer(function()
+	Button.MouseButton1Click:Connect(function()
+		enabled = not enabled
 
-		if Object.Parent then
-			OptimizeObject(Object)
+		Button.Text = text .. (enabled and ": ON" or ": OFF")
+
+		if enabled then
+			Button.BackgroundColor3 = Color3.fromRGB(100, 55, 125)
+		else
+			Button.BackgroundColor3 = Color3.fromRGB(43, 30, 52)
 		end
 
+		callback(enabled)
 	end)
+
+	return Button
+end
+
+--====================================================--
+-- ESP
+--====================================================--
+
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "HoaiESP"
+ESPFolder.Parent = Gui
+
+local function RemoveESP()
+	for _, v in ipairs(ESPFolder:GetChildren()) do
+		v:Destroy()
+	end
+end
+
+local function AddHighlight(model, color, text)
+	if not model:IsA("Model") then
+		return
+	end
+
+	local root =
+		model:FindFirstChild("HumanoidRootPart")
+		or model.PrimaryPart
+
+	if not root then
+		return
+	end
+
+	if model == LP.Character then
+		return
+	end
+
+	if model:FindFirstChild("HoaiHighlight") then
+		return
+	end
+
+	local Highlight = Instance.new("Highlight")
+	Highlight.Name = "HoaiHighlight"
+	Highlight.Adornee = model
+	Highlight.FillColor = color
+	Highlight.OutlineColor = Color3.new(1,1,1)
+	Highlight.FillTransparency = 0.65
+	Highlight.Parent = ESPFolder
+
+	local Billboard = Instance.new("BillboardGui")
+	Billboard.Name = "ESPText"
+	Billboard.Adornee = root
+	Billboard.Size = UDim2.new(0, 180, 0, 35)
+	Billboard.StudsOffset = Vector3.new(0, 3, 0)
+	Billboard.AlwaysOnTop = true
+	Billboard.Parent = ESPFolder
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1,0,1,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.TextColor3 = color
+	Label.TextStrokeTransparency = 0
+	Label.TextSize = 14
+	Label.Font = Enum.Font.GothamBold
+	Label.Parent = Billboard
+end
+
+local function UpdateESP()
+	RemoveESP()
+
+	if CONFIG.ESPPlayer then
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= LP and player.Character then
+				AddHighlight(
+					player.Character,
+					Color3.fromRGB(255, 100, 100),
+					"PLAYER: " .. player.Name
+				)
+			end
+		end
+	end
+
+	if CONFIG.ESPNPC then
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			if obj:IsA("Model")
+				and obj ~= LP.Character
+				and obj:FindFirstChildOfClass("Humanoid") then
+
+				if not Players:GetPlayerFromCharacter(obj) then
+					AddHighlight(
+						obj,
+						Color3.fromRGB(255, 180, 60),
+						"NPC: " .. obj.Name
+					)
+				end
+			end
+		end
+	end
+
+	if CONFIG.ESPChest then
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			if obj:IsA("Model") or obj:IsA("BasePart") then
+
+				local n = string.lower(obj.Name)
+
+				if string.find(n, "chest")
+					or string.find(n, "treasure")
+					or string.find(n, "crate") then
+
+					if obj:IsA("Model") then
+						AddHighlight(
+							obj,
+							Color3.fromRGB(255, 225, 80),
+							"CHEST: " .. obj.Name
+						)
+					end
+				end
+			end
+		end
+	end
+end
+
+CreateToggle("ESP Player", function(value)
+	CONFIG.ESPPlayer = value
+	UpdateESP()
 end)
 
---========================================================
--- NPC COSMETICS
---========================================================
+CreateToggle("ESP NPC", function(value)
+	CONFIG.ESPNPC = value
+	UpdateESP()
+end)
 
-local function GetHumanoid(Model)
+CreateToggle("ESP Chest", function(value)
+	CONFIG.ESPChest = value
+	UpdateESP()
+end)
 
-	if not Model or not Model:IsA("Model") then
+task.spawn(function()
+	while task.wait(2) do
+		if CONFIG.ESPPlayer
+			or CONFIG.ESPNPC
+			or CONFIG.ESPChest then
+
+			UpdateESP()
+		end
+	end
+end)
+
+--====================================================--
+-- AIM FOV
+--====================================================--
+
+local FOV = Instance.new("Frame")
+FOV.Name = "AimFOV"
+FOV.AnchorPoint = Vector2.new(0.5, 0.5)
+FOV.Size = UDim2.fromOffset(CONFIG.AimFOV * 2, CONFIG.AimFOV * 2)
+FOV.Position = UDim2.fromScale(0.5, 0.5)
+FOV.BackgroundTransparency = 1
+FOV.Visible = false
+FOV.Parent = Gui
+
+local FOVCorner = Instance.new("UICorner")
+FOVCorner.CornerRadius = UDim.new(1, 0)
+FOVCorner.Parent = FOV
+
+local FOVStroke = Instance.new("UIStroke")
+FOVStroke.Color = Color3.fromRGB(210, 120, 255)
+FOVStroke.Thickness = 2
+FOVStroke.Transparency = 0.2
+FOVStroke.Parent = FOV
+
+local function GetNearestPlayer()
+	local nearest = nil
+	local nearestDistance = CONFIG.AimFOV
+
+	local center = Vector2.new(
+		Camera.ViewportSize.X / 2,
+		Camera.ViewportSize.Y / 2
+	)
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LP and player.Character then
+
+			local humanoid =
+				player.Character:FindFirstChildOfClass("Humanoid")
+
+			local root =
+				player.Character:FindFirstChild("HumanoidRootPart")
+
+			if humanoid and root and humanoid.Health > 0 then
+
+				local pos, visible =
+					Camera:WorldToViewportPoint(root.Position)
+
+				if visible then
+					local distance = (
+						Vector2.new(pos.X, pos.Y) - center
+					).Magnitude
+
+					if distance < nearestDistance then
+						nearestDistance = distance
+						nearest = root
+					end
+				end
+			end
+		end
+	end
+
+	return nearest
+end
+
+CreateToggle("Aim Assist", function(value)
+	CONFIG.AimAssist = value
+	FOV.Visible = value
+end)
+
+RunService.RenderStepped:Connect(function()
+	if not CONFIG.AimAssist then
+		return
+	end
+
+	local target = GetNearestPlayer()
+
+	if target then
+		Camera.CFrame = Camera.CFrame:Lerp(
+			CFrame.lookAt(Camera.CFrame.Position, target.Position),
+			CONFIG.AimSmooth
+		)
+	end
+end)
+
+--====================================================--
+-- FLY
+--====================================================--
+
+local FlyConnection
+
+local function StartFly()
+	local char = LP.Character
+	if not char then
+		return
+	end
+
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+
+	local Velocity = Instance.new("BodyVelocity")
+	Velocity.Name = "HoaiFlyVelocity"
+	Velocity.MaxForce = Vector3.new(
+		math.huge,
+		math.huge,
+		math.huge
+	)
+	Velocity.Velocity = Vector3.zero
+	Velocity.Parent = root
+
+	FlyConnection = RunService.RenderStepped:Connect(function()
+		if not CONFIG.Fly or not root.Parent then
+			return
+		end
+
+		local move =
+			workspace.CurrentCamera.CFrame.LookVector
+			* CONFIG.FlySpeed
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) == false
+			and UserInputService:IsKeyDown(Enum.KeyCode.S) == false then
+
+			move = Vector3.zero
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+			move = -workspace.CurrentCamera.CFrame.LookVector
+				* CONFIG.FlySpeed
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+			move -= workspace.CurrentCamera.CFrame.RightVector
+				* CONFIG.FlySpeed
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+			move += workspace.CurrentCamera.CFrame.RightVector
+				* CONFIG.FlySpeed
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+			move += Vector3.new(0, CONFIG.FlySpeed, 0)
+		end
+
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+			move -= Vector3.new(0, CONFIG.FlySpeed, 0)
+		end
+
+		Velocity.Velocity = move
+	end)
+end
+
+local function StopFly()
+	if FlyConnection then
+		FlyConnection:Disconnect()
+		FlyConnection = nil
+	end
+
+	local char = LP.Character
+	if char then
+		local root = char:FindFirstChild("HumanoidRootPart")
+
+		if root then
+			local v = root:FindFirstChild("HoaiFlyVelocity")
+
+			if v then
+				v:Destroy()
+			end
+		end
+	end
+end
+
+CreateToggle("Fly", function(value)
+	CONFIG.Fly = value
+
+	if value then
+		StartFly()
+	else
+		StopFly()
+	end
+end)
+
+--====================================================--
+-- AUTO FARM
+--====================================================--
+
+local function FindNearestNPC()
+	local char = LP.Character
+	local root =
+		char and char:FindFirstChild("HumanoidRootPart")
+
+	if not root then
 		return nil
 	end
 
-	return Model:FindFirstChildOfClass("Humanoid")
-end
+	local nearest
+	local distance = math.huge
 
-local function HideNPCCosmetics(Model)
+	for _, obj in ipairs(workspace:GetDescendants()) do
 
-	local Humanoid = GetHumanoid(Model)
+		if obj:IsA("Model")
+			and obj ~= char
+			and obj:FindFirstChildOfClass("Humanoid")
+			and obj:FindFirstChild("HumanoidRootPart")
+			and not Players:GetPlayerFromCharacter(obj) then
 
-	if not Humanoid then
-		return
-	end
+			local hum = obj:FindFirstChildOfClass("Humanoid")
 
-	if Model == Player.Character then
-		return
-	end
+			if hum and hum.Health > 0 then
 
-	for _, Object in ipairs(Model:GetDescendants()) do
+				local d =
+					(root.Position - obj.HumanoidRootPart.Position).Magnitude
 
-		if Object:IsA("Accessory") then
-
-			for _, Part in ipairs(Object:GetDescendants()) do
-
-				if Part:IsA("BasePart") then
-
-					pcall(function()
-						Part.LocalTransparencyModifier = 1
-						Part.CastShadow = false
-					end)
-
-				elseif Part:IsA("Texture")
-					or Part:IsA("Decal") then
-
-					pcall(function()
-						Part.Transparency = 1
-					end)
-
+				if d < distance then
+					distance = d
+					nearest = obj
 				end
 			end
-
-		elseif Object:IsA("Shirt") then
-
-			pcall(function()
-				Object.ShirtTemplate = ""
-			end)
-
-		elseif Object:IsA("Pants") then
-
-			pcall(function()
-				Object.PantsTemplate = ""
-			end)
-
-		elseif Object:IsA("ShirtGraphic") then
-
-			pcall(function()
-				Object.Graphic = ""
-			end)
-
 		end
 	end
+
+	return nearest
 end
 
-for _, Object in ipairs(Workspace:GetChildren()) do
-
-	if Object:IsA("Model") then
-		HideNPCCosmetics(Object)
-	end
-
-end
-
-Workspace.ChildAdded:Connect(function(Object)
-
-	if Object:IsA("Model") then
-
-		task.defer(function()
-			HideNPCCosmetics(Object)
-		end)
-
-	end
+CreateToggle("Auto Farm", function(value)
+	CONFIG.AutoFarm = value
 end)
-
---========================================================
--- QUALITY
---========================================================
-
-pcall(function()
-	settings().Rendering.QualityLevel =
-		Enum.QualityLevel.Level01
-end)
-
---========================================================
--- AUTO MARINES
---========================================================
 
 task.spawn(function()
+	while task.wait(0.15) do
 
-	if not game:IsLoaded() then
-		game.Loaded:Wait()
-	end
+		if CONFIG.AutoFarm then
 
-	if Player.Team then
-		return
-	end
+			local char = LP.Character
+			local root =
+				char and char:FindFirstChild("HumanoidRootPart")
 
-	local Remotes =
-		ReplicatedStorage:FindFirstChild("Remotes")
+			if root then
 
-	if not Remotes then
-		warn("HOÀI HUB: Remotes not found")
-		return
-	end
+				local npc = FindNearestNPC()
 
-	local CommF_ =
-		Remotes:FindFirstChild("CommF_")
+				if npc and npc:FindFirstChild("HumanoidRootPart") then
 
-	if not CommF_ then
-		warn("HOÀI HUB: CommF_ not found")
-		return
-	end
+					local target =
+						npc.HumanoidRootPart.Position
+						+ Vector3.new(0, 3, 5)
 
-	for _ = 1, 20 do
+					root.CFrame = CFrame.lookAt(
+						target,
+						npc.HumanoidRootPart.Position
+					)
 
-		if Player.Team then
-			break
-		end
-
-		pcall(function()
-			CommF_:InvokeServer(
-				"SetTeam",
-				CONFIG.Team
-			)
-		end)
-
-		task.wait(0.5)
-	end
-
-end)
-
---========================================================
--- READY
---========================================================
-
-Main.Visible = true
-Status.Visible = true
-
-CurrentStatus = ""
-SetStatus("Waiting...")
-
-print("HOÀI HUB PART 1 LOADED")		
---========================================================
--- HOÀI HUB - INVENTORY DATA PROBE
--- READ ONLY
--- CHỈ TEST Subclass.GetPlayerData 1 LẦN
---========================================================
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local function FindRemote()
-	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-
-	if not Remotes then
-		return nil, "Remotes not found"
-	end
-
-	local Subclass = Remotes:FindFirstChild("Subclass")
-
-	if not Subclass then
-		return nil, "Subclass folder not found"
-	end
-
-	local GetPlayerData =
-		Subclass:FindFirstChild("GetPlayerData")
-
-	if not GetPlayerData then
-		return nil, "Subclass.GetPlayerData not found"
-	end
-
-	if not GetPlayerData:IsA("RemoteFunction") then
-		return nil, "GetPlayerData is not RemoteFunction"
-	end
-
-	return GetPlayerData, nil
-end
-
-local function ContainsTarget(Name)
-	if typeof(Name) ~= "string" then
-		return false
-	end
-
-	local N = string.lower(Name)
-
-	local Targets = {
-		"dojo belt (white)",
-		"dojo belt (yellow)",
-		"dojo belt (orange)",
-		"dojo belt (green)",
-		"dojo belt (blue)",
-		"dojo belt (purple)",
-		"dojo belt (red)",
-		"dojo belt (black)",
-		"dragonstorm",
-		"dragon storm",
-		"dragonheart",
-		"dragon heart",
-	}
-
-	for _, Target in ipairs(Targets) do
-		if N == Target then
-			return true
-		end
-	end
-
-	return false
-end
-
-local function ScanTable(Data, Path, Found)
-	if type(Data) ~= "table" then
-		return
-	end
-
-	for Key, Value in pairs(Data) do
-		local CurrentPath =
-			Path .. "." .. tostring(Key)
-
-		if type(Value) == "table" then
-
-			ScanTable(
-				Value,
-				CurrentPath,
-				Found
-			)
-
-		elseif typeof(Value) == "string" then
-
-			if ContainsTarget(Value) then
-				Found[#Found + 1] = {
-					Path = CurrentPath,
-					Value = Value,
-				}
+					--// Đây chỉ là phần di chuyển.
+					--// Hệ thống damage/attack nên được xử lý
+					--// bằng RemoteEvent của chính game bạn.
+				end
 			end
+		end
+	end
+end)
 
+--====================================================--
+-- FIX LAG
+--====================================================--
+
+local function ApplyFixLag()
+	for _, obj in ipairs(workspace:GetDescendants()) do
+
+		if obj:IsA("ParticleEmitter")
+			or obj:IsA("Trail")
+			or obj:IsA("Beam") then
+
+			obj.Enabled = false
+
+		elseif obj:IsA("Smoke")
+			or obj:IsA("Fire")
+			or obj:IsA("Sparkles") then
+
+			obj.Enabled = false
+
+		elseif obj:IsA("BasePart") then
+			-- giảm tải render
+			if obj.Material ~= Enum.Material.Glass then
+				obj.CastShadow = false
+			end
+		end
+	end
+
+	for _, obj in ipairs(Lighting:GetChildren()) do
+
+		if obj:IsA("PostEffect") then
+			obj.Enabled = false
 		end
 	end
 end
 
-local Remote, Error = FindRemote()
+CreateToggle("Fix Lag", function(value)
+	CONFIG.FixLag = value
 
-if not Remote then
-	warn("[HOAI INVENTORY]", Error)
-	return
-end
-
-print("========================================")
-print("HOAI INVENTORY DATA PROBE")
-print("Remote:", Remote:GetFullName())
-print("========================================")
-
-local Success, Result = pcall(function()
-	-- CHỈ THỬ ĐỌC 1 LẦN, KHÔNG ARGUMENT
-	return Remote:InvokeServer()
+	if value then
+		ApplyFixLag()
+	end
 end)
 
-print("Invoke Success:", Success)
-print("Response Type:", typeof(Result))
+--====================================================--
+-- SPEED
+--====================================================--
 
-if not Success then
-	warn("Invoke Error:", Result)
-	return
-end
+CreateToggle("Speed Tween", function(value)
 
-if type(Result) ~= "table" then
-	print("Raw Response:", Result)
-	return
-end
-
-print("========== RESPONSE KEYS ==========")
-
-for Key, Value in pairs(Result) do
-	print(
-		tostring(Key),
-		"|",
-		typeof(Value),
-		"|",
-		tostring(Value)
-	)
-end
-
-print("========== TARGET ITEMS ==========")
-
-local Found = {}
-
-ScanTable(
-	Result,
-	"Response",
-	Found
-)
-
-if #Found == 0 then
-
-	print(
-		"Không tìm thấy 8 Belt / Dragonstorm / Dragonheart trong response."
-	)
-
-else
-
-	for _, Item in ipairs(Found) do
-
-		print(
-			"[FOUND]",
-			Item.Value,
-			"<-",
-			Item.Path
-		)
-
+	if not value then
+		return
 	end
 
-end
+	local char = LP.Character
+	local hum =
+		char and char:FindFirstChildOfClass("Humanoid")
 
-print("========================================")
-print("PROBE COMPLETE")
-print("========================================")
+	if hum then
+		TweenService:Create(
+			hum,
+			TweenInfo.new(
+				0.5,
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.Out
+			),
+			{
+				WalkSpeed = CONFIG.Speed
+			}
+		):Play()
+	end
+end)
+
+--====================================================--
+-- JUMP
+--====================================================--
+
+CreateToggle("Jump Tween", function(value)
+
+	if not value then
+		return
+	end
+
+	local char = LP.Character
+	local hum =
+		char and char:FindFirstChildOfClass("Humanoid")
+
+	if hum then
+		hum.UseJumpPower = true
+
+		TweenService:Create(
+			hum,
+			TweenInfo.new(
+				0.4,
+				Enum.EasingStyle.Quad,
+				Enum.EasingDirection.Out
+			),
+			{
+				JumpPower = CONFIG.Jump
+			}
+		):Play()
+	end
+end)
+
+--====================================================--
+-- RIGHT CTRL -> HIDE / SHOW
+--====================================================--
+
+UserInputService.InputBegan:Connect(function(input, processed)
+
+	if processed then
+		return
+	end
+
+	if input.KeyCode == Enum.KeyCode.RightControl then
+		Main.Visible = not Main.Visible
+	end
+end)
+
+--====================================================--
+-- RESPAWN
+--====================================================--
+
+LP.CharacterAdded:Connect(function()
+	task.wait(1)
+
+	if CONFIG.Fly then
+		StopFly()
+	end
+
+	if CONFIG.ESPPlayer
+		or CONFIG.ESPNPC
+		or CONFIG.ESPChest then
+
+		UpdateESP()
+	end
+end)
