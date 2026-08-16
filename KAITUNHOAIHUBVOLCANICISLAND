@@ -584,296 +584,174 @@ SetStatus("Waiting...")
 
 print("HOÀI HUB PART 1 LOADED")		
 --========================================================
--- BLOX FRUITS INVENTORY DIAGNOSTIC
--- CHỈ ĐỌC / KHÔNG GỌI REMOTE
+-- HOÀI HUB - INVENTORY DATA PROBE
+-- READ ONLY
+-- CHỈ TEST Subclass.GetPlayerData 1 LẦN
 --========================================================
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Player = Players.LocalPlayer
-local PlayerGui = Player:FindFirstChildOfClass("PlayerGui")
+local function FindRemote()
+	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
 
-print("==================================================")
-print(" BLOX FRUITS INVENTORY DIAGNOSTIC")
-print("==================================================")
+	if not Remotes then
+		return nil, "Remotes not found"
+	end
 
---========================================================
--- 1. PLAYER ROOT
---========================================================
+	local Subclass = Remotes:FindFirstChild("Subclass")
 
-print("")
-print("========== PLAYER ROOT ==========")
+	if not Subclass then
+		return nil, "Subclass folder not found"
+	end
 
-for _, Object in ipairs(Player:GetChildren()) do
+	local GetPlayerData =
+		Subclass:FindFirstChild("GetPlayerData")
+
+	if not GetPlayerData then
+		return nil, "Subclass.GetPlayerData not found"
+	end
+
+	if not GetPlayerData:IsA("RemoteFunction") then
+		return nil, "GetPlayerData is not RemoteFunction"
+	end
+
+	return GetPlayerData, nil
+end
+
+local function ContainsTarget(Name)
+	if typeof(Name) ~= "string" then
+		return false
+	end
+
+	local N = string.lower(Name)
+
+	local Targets = {
+		"dojo belt (white)",
+		"dojo belt (yellow)",
+		"dojo belt (orange)",
+		"dojo belt (green)",
+		"dojo belt (blue)",
+		"dojo belt (purple)",
+		"dojo belt (red)",
+		"dojo belt (black)",
+		"dragonstorm",
+		"dragon storm",
+		"dragonheart",
+		"dragon heart",
+	}
+
+	for _, Target in ipairs(Targets) do
+		if N == Target then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function ScanTable(Data, Path, Found)
+	if type(Data) ~= "table" then
+		return
+	end
+
+	for Key, Value in pairs(Data) do
+		local CurrentPath =
+			Path .. "." .. tostring(Key)
+
+		if type(Value) == "table" then
+
+			ScanTable(
+				Value,
+				CurrentPath,
+				Found
+			)
+
+		elseif typeof(Value) == "string" then
+
+			if ContainsTarget(Value) then
+				Found[#Found + 1] = {
+					Path = CurrentPath,
+					Value = Value,
+				}
+			end
+
+		end
+	end
+end
+
+local Remote, Error = FindRemote()
+
+if not Remote then
+	warn("[HOAI INVENTORY]", Error)
+	return
+end
+
+print("========================================")
+print("HOAI INVENTORY DATA PROBE")
+print("Remote:", Remote:GetFullName())
+print("========================================")
+
+local Success, Result = pcall(function()
+	-- CHỈ THỬ ĐỌC 1 LẦN, KHÔNG ARGUMENT
+	return Remote:InvokeServer()
+end)
+
+print("Invoke Success:", Success)
+print("Response Type:", typeof(Result))
+
+if not Success then
+	warn("Invoke Error:", Result)
+	return
+end
+
+if type(Result) ~= "table" then
+	print("Raw Response:", Result)
+	return
+end
+
+print("========== RESPONSE KEYS ==========")
+
+for Key, Value in pairs(Result) do
 	print(
-		"[PLAYER]",
-		Object.ClassName,
+		tostring(Key),
 		"|",
-		Object.Name
+		typeof(Value),
+		"|",
+		tostring(Value)
 	)
 end
 
---========================================================
--- 2. PLAYER.DATA
---========================================================
+print("========== TARGET ITEMS ==========")
 
-print("")
-print("========== PLAYER.DATA ==========")
+local Found = {}
 
-local Data = Player:FindFirstChild("Data")
+ScanTable(
+	Result,
+	"Response",
+	Found
+)
 
-if not Data then
-	print("[DATA] NOT FOUND")
-else
-	print("[DATA] FOUND:", Data:GetFullName())
+if #Found == 0 then
 
-	for _, Object in ipairs(Data:GetDescendants()) do
-
-		if Object:IsA("ValueBase")
-			or Object:IsA("Folder")
-			or Object:IsA("Configuration") then
-
-			local ValueText = ""
-
-			pcall(function()
-				if Object:IsA("ValueBase") then
-					ValueText = "VALUE=" .. tostring(Object.Value)
-				end
-			end)
-
-			print(
-				"[DATA]",
-				Object.ClassName,
-				"|",
-				Object:GetFullName(),
-				"|",
-				ValueText
-			)
-		end
-	end
-end
-
---========================================================
--- 3. BACKPACK
---========================================================
-
-print("")
-print("========== BACKPACK ==========")
-
-local Backpack = Player:FindFirstChildOfClass("Backpack")
-
-if not Backpack then
-
-	print("[BACKPACK] NOT FOUND")
+	print(
+		"Không tìm thấy 8 Belt / Dragonstorm / Dragonheart trong response."
+	)
 
 else
 
-	print("[BACKPACK] FOUND")
-
-	for _, Object in ipairs(
-		Backpack:GetDescendants()
-	) do
+	for _, Item in ipairs(Found) do
 
 		print(
-			"[BACKPACK]",
-			Object.ClassName,
-			"|",
-			Object:GetFullName()
+			"[FOUND]",
+			Item.Value,
+			"<-",
+			Item.Path
 		)
 
 	end
+
 end
 
---========================================================
--- 4. CHARACTER
---========================================================
-
-print("")
-print("========== CHARACTER ==========")
-
-local Character = Player.Character
-
-if not Character then
-
-	print("[CHARACTER] NOT FOUND")
-
-else
-
-	print("[CHARACTER]", Character:GetFullName())
-
-	for _, Object in ipairs(
-		Character:GetDescendants()
-	) do
-
-		-- Chỉ in những object có khả năng liên quan item
-		if Object:IsA("Tool")
-			or Object:IsA("Accessory")
-			or Object:IsA("ValueBase") then
-
-			print(
-				"[CHARACTER]",
-				Object.ClassName,
-				"|",
-				Object:GetFullName()
-			)
-		end
-
-	end
-end
-
---========================================================
--- 5. PLAYER GUI - TÌM INVENTORY
---========================================================
-
-print("")
-print("========== PLAYER GUI INVENTORY ==========")
-
-if not PlayerGui then
-
-	print("[GUI] PlayerGui NOT FOUND")
-
-else
-
-	local FoundGui = false
-
-	for _, Object in ipairs(
-		PlayerGui:GetDescendants()
-	) do
-
-		local Name = string.lower(Object.Name)
-
-		if string.find(Name, "inventory", 1, true)
-			or string.find(Name, "backpack", 1, true)
-			or string.find(Name, "item", 1, true)
-			or string.find(Name, "stash", 1, true)
-			or string.find(Name, "wardrobe", 1, true) then
-
-			FoundGui = true
-
-			print(
-				"[GUI CANDIDATE]",
-				Object.ClassName,
-				"|",
-				Object:GetFullName()
-			)
-
-		end
-
-	end
-
-	if not FoundGui then
-		print("[GUI] Không tìm thấy GUI có tên liên quan Inventory")
-	end
-end
-
---========================================================
--- 6. REMOTES LIÊN QUAN INVENTORY
---========================================================
-
-print("")
-print("========== INVENTORY REMOTE CANDIDATES ==========")
-
-local RemoteFound = false
-
-for _, Object in ipairs(
-	ReplicatedStorage:GetDescendants()
-) do
-
-	if Object:IsA("RemoteFunction")
-		or Object:IsA("RemoteEvent") then
-
-		local FullName =
-			string.lower(Object:GetFullName())
-
-		local ObjectName =
-			string.lower(Object.Name)
-
-		local Keywords = {
-			"inventory",
-			"item",
-			"weapon",
-			"accessory",
-			"stash",
-			"storage",
-			"backpack",
-			"craft",
-			"data",
-			"playerdata"
-		}
-
-		for _, Keyword in ipairs(Keywords) do
-
-			if string.find(
-				FullName,
-				Keyword,
-				1,
-				true
-			)
-			or string.find(
-				ObjectName,
-				Keyword,
-				1,
-				true
-			) then
-
-				RemoteFound = true
-
-				print(
-					"[REMOTE]",
-					Object.ClassName,
-					"|",
-					Object:GetFullName()
-				)
-
-				break
-			end
-		end
-	end
-end
-
-if not RemoteFound then
-	print("[REMOTE] Không tìm thấy remote có tên liên quan inventory")
-end
-
---========================================================
--- 7. COMM F
---========================================================
-
-print("")
-print("========== COMM REMOTES ==========")
-
-local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-
-if not Remotes then
-
-	print("[REMOTES] ReplicatedStorage.Remotes NOT FOUND")
-
-else
-
-	for _, Object in ipairs(
-		Remotes:GetDescendants()
-	) do
-
-		if Object:IsA("RemoteFunction")
-			or Object:IsA("RemoteEvent") then
-
-			print(
-				"[REMOTES]",
-				Object.ClassName,
-				"|",
-				Object:GetFullName()
-			)
-
-		end
-	end
-end
-
---========================================================
--- DONE
---========================================================
-
-print("")
-print("==================================================")
-print(" INVENTORY DIAGNOSTIC COMPLETE")
-print("==================================================")
+print("========================================")
+print("PROBE COMPLETE")
+print("========================================")
