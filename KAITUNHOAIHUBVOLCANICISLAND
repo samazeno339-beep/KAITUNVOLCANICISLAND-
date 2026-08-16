@@ -779,9 +779,8 @@ print("HOÀI HUB: UI Loaded")
 print("HOÀI HUB: Fix Lag Active")
 print("HOÀI HUB: Auto Marines Active")
 --========================================================
--- HOÀI HUB - KAITUN STYLE PROGRESS CHECKER
--- Dojo Belt -> Dragon Storm -> Dragonheart
--- Check Dojo mỗi 0.1s
+-- HOÀI HUB - DOJO + DRAGON PROGRESS CHECKER
+-- 8 Belts -> Dragonstorm -> Dragonheart
 --========================================================
 
 local Players = game:GetService("Players")
@@ -800,87 +799,102 @@ local function SetStatus(Text)
 end
 
 --========================================================
--- BELT DATA
+-- BELTS
 --========================================================
 
 local Belts = {
-	White = {
-		English = "White Belt",
-		Vietnamese = "đai Trắng"
-	},
-
-	Yellow = {
-		English = "Yellow Belt",
-		Vietnamese = "đai Vàng"
-	},
-
-	Orange = {
-		English = "Orange Belt",
-		Vietnamese = "đai Cam"
-	},
-
-	Green = {
-		English = "Green Belt",
-		Vietnamese = "đai Xanh Lá"
-	},
-
-	Blue = {
-		English = "Blue Belt",
-		Vietnamese = "đai Xanh Dương"
-	},
-
-	Purple = {
-		English = "Purple Belt",
-		Vietnamese = "đai Tím"
-	},
-
-	Red = {
-		English = "Red Belt",
-		Vietnamese = "đai Đỏ"
-	},
-
-	Black = {
-		English = "Black Belt",
-		Vietnamese = "đai Đen"
-	}
+	{Key = "White",  English = "White Belt",  VN = "đai Trắng"},
+	{Key = "Yellow", English = "Yellow Belt", VN = "đai Vàng"},
+	{Key = "Orange", English = "Orange Belt", VN = "đai Cam"},
+	{Key = "Green",  English = "Green Belt",  VN = "đai Xanh Lá"},
+	{Key = "Blue",   English = "Blue Belt",   VN = "đai Xanh Dương"},
+	{Key = "Purple", English = "Purple Belt", VN = "đai Tím"},
+	{Key = "Red",    English = "Red Belt",    VN = "đai Đỏ"},
+	{Key = "Black",  English = "Black Belt",  VN = "đai Đen"}
 }
 
-local BeltOrder = {
-	"White",
-	"Yellow",
-	"Orange",
-	"Green",
-	"Blue",
-	"Purple",
-	"Red",
-	"Black"
-}
+local BeltIndex = {}
+
+for i, Belt in ipairs(Belts) do
+	BeltIndex[string.lower(Belt.Key)] = i
+end
 
 --========================================================
--- GET DOJO PROGRESS
+-- DRAGON ITEM CHECK
+--========================================================
+-- Dragonstorm / Dragonheart là item sở hữu.
+-- Kiểm tra các object mà client hiện đang expose.
+
+local function Normalize(Name)
+	return string.lower(
+		tostring(Name)
+			:gsub("^%s+", "")
+			:gsub("%s+$", "")
+			:gsub("%s+", " ")
+	)
+end
+
+local function BuildOwnedSet()
+
+	local Owned = {}
+
+	local function Scan(Container)
+		if not Container then
+			return
+		end
+
+		for _, Object in ipairs(Container:GetDescendants()) do
+			Owned[Normalize(Object.Name)] = true
+		end
+	end
+
+	Scan(Player.Character)
+	Scan(Player:FindFirstChildOfClass("Backpack"))
+
+	return Owned
+end
+
+local function HasOwned(Owned, ...)
+	for i = 1, select("#", ...) do
+		local Name = select(i, ...)
+		if Owned[Normalize(Name)] then
+			return true
+		end
+	end
+
+	return false
+end
+
+--========================================================
+-- DOJO REMOTE
 --========================================================
 
-local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
 
-local DojoRemote =
-	Remotes:WaitForChild("RF/InteractDragonQuest")
+local DojoRemote
 
-local function GetDojoProgress()
+if Remotes then
+	local Candidate = Remotes:FindFirstChild("RF/InteractDragonQuest")
+
+	if Candidate and Candidate:IsA("RemoteFunction") then
+		DojoRemote = Candidate
+	end
+end
+
+local function ReadDojo()
+
+	if not DojoRemote then
+		return nil
+	end
 
 	local Success, Result = pcall(function()
-
 		return DojoRemote:InvokeServer({
 			NPC = "Dojo Trainer",
 			Command = "RequestQuest"
 		})
-
 	end)
 
-	if not Success then
-		return nil
-	end
-
-	if type(Result) ~= "table" then
+	if not Success or type(Result) ~= "table" then
 		return nil
 	end
 
@@ -888,199 +902,114 @@ local function GetDojoProgress()
 end
 
 --========================================================
--- GET NEXT BELT
+-- STATUS CACHE
 --========================================================
 
-local function GetNextBelt(CurrentBelt)
+local LastStatus = nil
 
-	if typeof(CurrentBelt) ~= "string" then
-		return "White"
+local function ApplyStatus(Text)
+
+	if LastStatus == Text then
+		return
 	end
 
-	for Index, BeltName in ipairs(BeltOrder) do
-
-		if BeltName == CurrentBelt then
-
-			local NextIndex = Index + 1
-
-			if BeltOrder[NextIndex] then
-				return BeltOrder[NextIndex]
-			end
-
-			return nil
-		end
-
-	end
-
-	return "White"
+	LastStatus = Text
+	SetStatus(Text)
 end
 
 --========================================================
--- DRAGON ITEM CHECK
+-- MAIN CHECK
 --========================================================
--- Phần này chỉ kiểm tra những item client đang expose.
--- Không dùng nó để xác định Dojo Belt.
 
-local function HasClientItem(...)
+local function CheckProgress()
 
-	local Names = {...}
+	--============================================
+	-- 1. DOJO
+	--============================================
 
-	local function Scan(Container)
+	local DojoData = ReadDojo()
 
-		if not Container then
-			return false
-		end
+	if DojoData then
 
-		for _, Object in ipairs(Container:GetDescendants()) do
+		local CurrentBelt = DojoData.BeltName
 
-			for _, Name in ipairs(Names) do
+		if type(CurrentBelt) == "string" then
 
-				if string.lower(Object.Name) == string.lower(Name) then
-					return true
-				end
+			local Index = BeltIndex[Normalize(CurrentBelt)]
 
+			-- Chưa hoàn thành Black
+			if Index and Index < #Belts then
+
+				local NextBelt = Belts[Index + 1]
+
+				ApplyStatus(
+					"Getting "
+					.. NextBelt.English
+					.. " / Đang lấy "
+					.. NextBelt.VN
+					.. "..."
+				)
+
+				return
 			end
 
+			-- Chưa có BeltName rõ ràng
+			if Index == nil then
+				ApplyStatus(
+					"Checking Dojo... / Đang kiểm tra Dojo..."
+				)
+				return
+			end
+
+			--====================================
+			-- 2. ĐÃ BLACK -> CHECK DRAGON
+			--====================================
+
+			local Owned = BuildOwnedSet()
+
+			-- Dragonstorm
+			if not HasOwned(
+				Owned,
+				"Dragonstorm",
+				"Dragon Storm"
+			) then
+
+				ApplyStatus(
+					"Getting Dragonstorm / Đang lấy Dragonstorm..."
+				)
+
+				return
+			end
+
+			-- Dragonheart
+			if not HasOwned(
+				Owned,
+				"Dragonheart",
+				"Dragon Heart"
+			) then
+
+				ApplyStatus(
+					"Getting Dragonheart / Đang lấy Dragonheart..."
+				)
+
+				return
+			end
+
+			--====================================
+			-- 3. HOÀN THÀNH
+			--====================================
+
+			ApplyStatus(
+				"Complete / Đã hoàn thành!"
+			)
+
+			return
 		end
-
-		return false
 	end
 
-	if Scan(Player.Character) then
-		return true
-	end
-
-	if Scan(Player:FindFirstChildOfClass("Backpack")) then
-		return true
-	end
-
-	return false
-end
-
-local function HasDragonStorm()
-
-	return HasClientItem(
-		"Dragon Storm",
-		"Dragonstorm"
+	ApplyStatus(
+		"Checking Dojo... / Đang kiểm tra Dojo..."
 	)
-end
-
-local function HasDragonHeart()
-
-	return HasClientItem(
-		"Dragonheart",
-		"Dragon Heart",
-		"DragonHeart"
-	)
-end
-
---========================================================
--- STATUS CHECK
---========================================================
-
-local LastStatus = ""
-
-local function UpdateStatus()
-
-	local Progress = GetDojoProgress()
-
-	if not Progress then
-		return
-	end
-
-	local CurrentBelt = Progress.BeltName
-
-	--============================================
-	-- CHƯA CÓ BELT / CHƯA BẮT ĐẦU
-	--============================================
-
-	if not CurrentBelt then
-
-		local Text =
-			"Getting White Belt / Đang lấy đai Trắng..."
-
-		if Text ~= LastStatus then
-			LastStatus = Text
-			SetStatus(Text)
-		end
-
-		return
-	end
-
-	--============================================
-	-- CÒN BELT
-	--============================================
-
-	if CurrentBelt ~= "Black" then
-
-		local NextBelt = GetNextBelt(CurrentBelt)
-
-		if NextBelt and Belts[NextBelt] then
-
-			local Info = Belts[NextBelt]
-
-			local Text =
-				"Getting "
-				.. Info.English
-				.. " / Đang lấy "
-				.. Info.Vietnamese
-				.. "..."
-
-			if Text ~= LastStatus then
-				LastStatus = Text
-				SetStatus(Text)
-			end
-
-		end
-
-		return
-	end
-
-	--============================================
-	-- BLACK BELT -> DRAGON STORM
-	--============================================
-
-	if not HasDragonStorm() then
-
-		local Text =
-			"Getting Dragon Storm / Đang lấy Dragon Storm..."
-
-		if Text ~= LastStatus then
-			LastStatus = Text
-			SetStatus(Text)
-		end
-
-		return
-	end
-
-	--============================================
-	-- DRAGON STORM -> DRAGONHEART
-	--============================================
-
-	if not HasDragonHeart() then
-
-		local Text =
-			"Getting Dragonheart / Đang lấy Dragonheart..."
-
-		if Text ~= LastStatus then
-			LastStatus = Text
-			SetStatus(Text)
-		end
-
-		return
-	end
-
-	--============================================
-	-- HOÀN THÀNH
-	--============================================
-
-	local Text =
-		"Complete / Đã hoàn thành!"
-
-if Text ~= LastStatus then
-		LastStatus = Text
-		SetStatus(Text)
-	end
 end
 
 --========================================================
@@ -1091,15 +1020,16 @@ task.spawn(function()
 
 	while Player.Parent do
 
-		pcall(UpdateStatus)
+		pcall(CheckProgress)
 
-		task.wait(0.1)
+		task.wait(0.25)
 
 	end
 
 end)
 
--- Cho Kaitun dùng sau này
-_G.HoaiHubGetDojoProgress = GetDojoProgress
+-- Cho Kaitun gọi lại nếu cần
+_G.HoaiHubCheckProgress = CheckProgress
+_G.HoaiHubReadDojo = ReadDojo
 
-print("HOÀI HUB: Kaitun-style Progress Checker Active")
+print("HOÀI HUB: Dojo + Dragonstorm + Dragonheart checker active")
