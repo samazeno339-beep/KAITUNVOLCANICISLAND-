@@ -585,9 +585,9 @@ SetStatus("Waiting...")
 print("HOÀI HUB PART 1 LOADED")
 --========================================================
 -- HOÀI HUB - PART 2
--- READ ONLY CHECKER
+-- READ ONLY
 -- 8 DOJO BELTS + DRAGONSTORM + DRAGONHEART
--- CHECK INTERVAL: 0.25s
+-- CHECK: 0.25s
 --========================================================
 
 local Players = game:GetService("Players")
@@ -600,401 +600,212 @@ local Player = Players.LocalPlayer
 --========================================================
 
 local function SetStatus(Text)
-
 	if _G.HoaiHubSetStatus then
 		_G.HoaiHubSetStatus(Text)
 	end
-
 end
 
 --========================================================
--- 8 BELTS
+-- BELTS
 --========================================================
 
 local Belts = {
-	{
-		Key = "White",
-		ItemName = "Dojo Belt (White)",
-		English = "White Belt",
-		VN = "đai Trắng"
-	},
-
-	{
-		Key = "Yellow",
-		ItemName = "Dojo Belt (Yellow)",
-		English = "Yellow Belt",
-		VN = "đai Vàng"
-	},
-
-	{
-		Key = "Orange",
-		ItemName = "Dojo Belt (Orange)",
-		English = "Orange Belt",
-		VN = "đai Cam"
-	},
-
-	{
-		Key = "Green",
-		ItemName = "Dojo Belt (Green)",
-		English = "Green Belt",
-		VN = "đai Xanh Lá"
-	},
-
-	{
-		Key = "Blue",
-		ItemName = "Dojo Belt (Blue)",
-		English = "Blue Belt",
-		VN = "đai Xanh Dương"
-	},
-
-	{
-		Key = "Purple",
-		ItemName = "Dojo Belt (Purple)",
-		English = "Purple Belt",
-		VN = "đai Tím"
-	},
-
-	{
-		Key = "Red",
-		ItemName = "Dojo Belt (Red)",
-		English = "Red Belt",
-		VN = "đai Đỏ"
-	},
-
-	{
-		Key = "Black",
-		ItemName = "Dojo Belt (Black)",
-		English = "Black Belt",
-		VN = "đai Đen"
-	}
+	{Key = "White",  English = "White Belt",  VN = "đai Trắng"},
+	{Key = "Yellow", English = "Yellow Belt", VN = "đai Vàng"},
+	{Key = "Orange", English = "Orange Belt", VN = "đai Cam"},
+	{Key = "Green",  English = "Green Belt",  VN = "đai Xanh Lá"},
+	{Key = "Blue",   English = "Blue Belt",   VN = "đai Xanh Dương"},
+	{Key = "Purple", English = "Purple Belt", VN = "đai Tím"},
+	{Key = "Red",    English = "Red Belt",    VN = "đai Đỏ"},
+	{Key = "Black",  English = "Black Belt",  VN = "đai Đen"},
 }
-
---========================================================
--- BELT INDEX
---========================================================
 
 local BeltIndex = {}
 
-for Index, Belt in ipairs(Belts) do
-	BeltIndex[Normalize and string.lower(Belt.Key) or Belt.Key] = Index
+for i, belt in ipairs(Belts) do
+	BeltIndex[string.lower(belt.Key)] = i
 end
 
 --========================================================
--- NORMALIZE
+-- REMOTES
 --========================================================
 
-local function Normalize(Text)
-
-	if typeof(Text) ~= "string" then
-		return ""
-	end
-
-	Text = Text:gsub("^%s+", "")
-	Text = Text:gsub("%s+$", "")
-	Text = Text:gsub("%s+", " ")
-
-	return string.lower(Text)
-end
-
---========================================================
--- REBUILD BELT INDEX
---========================================================
-
-BeltIndex = {}
-
-for Index, Belt in ipairs(Belts) do
-	BeltIndex[Normalize(Belt.Key)] = Index
-end
-
---========================================================
--- FIND DOJO REMOTE
---========================================================
-
-local function FindDojoRemote()
-
-	local Remotes =
-		ReplicatedStorage:FindFirstChild("Remotes")
-
-	if not Remotes then
-		return nil
-	end
-
-	local Remote =
-		Remotes:FindFirstChild(
-			"RF/InteractDragonQuest"
-		)
-
-	if Remote
-		and Remote:IsA("RemoteFunction") then
-
-		return Remote
-	end
-
-	return nil
-end
+local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+local CommF_ = Remotes and Remotes:FindFirstChild("CommF_")
+local DojoRemote = Remotes and Remotes:FindFirstChild("RF/InteractDragonQuest")
 
 --========================================================
 -- READ DOJO
 --========================================================
 
-local function ReadDojoBelt()
-
-	local Remote =
-		FindDojoRemote()
-
-	if not Remote then
+local function ReadDojo()
+	if not DojoRemote or not DojoRemote:IsA("RemoteFunction") then
 		return nil
 	end
 
-	local Success, Result =
-		pcall(function()
+	local ok, result = pcall(function()
+		return DojoRemote:InvokeServer({
+			NPC = "Dojo Trainer",
+			Command = "RequestQuest"
+		})
+	end)
 
-			return Remote:InvokeServer({
-				NPC = "Dojo Trainer",
-				Command = "RequestQuest"
-			})
-
-		end)
-
-	if not Success then
+	if not ok or type(result) ~= "table" then
 		return nil
 	end
 
-	if type(Result) ~= "table" then
-		return nil
-	end
-
-	if type(Result.BeltName) ~= "string" then
-		return nil
-	end
-
-	return Result.BeltName
+	return result.BeltName
 end
 
 --========================================================
--- READ VISIBLE ITEMS
+-- READ INVENTORY
 --========================================================
+-- Dùng đúng kiểu getInventory() như nguồn Kaitun m gửi.
 
-local function BuildOwnedItems()
+local function ReadInventory()
+	if not CommF_ then
+		return {}
+	end
 
-	local Owned = {}
+	local ok, result = pcall(function()
+		return CommF_:InvokeServer("getInventory")
+	end)
 
-	local function Scan(Container)
+	if not ok or type(result) ~= "table" then
+		return {}
+	end
 
-		if not Container then
-			return
-		end
+	return result
+end
 
-		for _, Object in ipairs(
-			Container:GetDescendants()
-		) do
+local function InventoryHas(inventory, targetNames)
+	for _, entry in pairs(inventory) do
+		if type(entry) == "table" then
+			local name = entry.Name or entry.ItemName or entry.NameItem
 
-			local Name =
-				Normalize(Object.Name)
+			if type(name) == "string" then
+				local lowerName = string.lower(name)
 
-			if Name ~= "" then
-				Owned[Name] = true
+				for _, target in ipairs(targetNames) do
+					if lowerName == string.lower(target) then
+						return true
+					end
+				end
 			end
-
 		end
-	end
-
-	Scan(Player.Character)
-
-	Scan(
-		Player:FindFirstChildOfClass(
-			"Backpack"
-		)
-	)
-
-	return Owned
-end
-
-local function HasItem(Owned, ...)
-
-	for Index = 1, select("#", ...) do
-
-		local Name =
-			select(Index, ...)
-
-		if Owned[Normalize(Name)] then
-			return true
-		end
-
 	end
 
 	return false
 end
 
 --========================================================
--- READ ALL PROGRESS
+-- READ PROGRESS
 --========================================================
 
-local function ReadBloxFruitsProgress()
+local function ReadProgress()
+	local currentBelt = ReadDojo()
+	local inventory = ReadInventory()
 
-	local Result = {
-		CurrentBelt = nil,
+	local result = {
+		CurrentBelt = currentBelt,
 		HighestBeltRank = 0,
-		Belts = {},
 		DragonStorm = false,
-		DragonHeart = false
+		DragonHeart = false,
 	}
 
-	--====================================================
-	-- DOJO
-	--====================================================
+	if type(currentBelt) == "string" then
+		local rank = BeltIndex[string.lower(currentBelt)]
 
-	local CurrentBelt =
-		ReadDojoBelt()
-
-	Result.CurrentBelt =
-		CurrentBelt
-
-	if type(CurrentBelt) == "string" then
-
-		local CurrentIndex =
-			BeltIndex[Normalize(CurrentBelt)]
-
-		if CurrentIndex then
-
-			Result.HighestBeltRank =
-				CurrentIndex
-
-			for Index, Belt in ipairs(
-				Belts
-			) do
-
-				Result.Belts[
-					Belt.ItemName
-				] =
-					Index <= CurrentIndex
-
-			end
+		if rank then
+			result.HighestBeltRank = rank
 		end
 	end
 
-	--====================================================
-	-- DRAGON ITEMS
-	--====================================================
+	result.DragonStorm = InventoryHas(inventory, {
+		"Dragonstorm",
+		"Dragon Storm",
+	})
 
-	local Owned =
-		BuildOwnedItems()
+	result.DragonHeart = InventoryHas(inventory, {
+		"Dragonheart",
+		"Dragon Heart",
+	})
 
-	Result.DragonStorm =
-		HasItem(
-			Owned,
-			"Dragonstorm",
-			"Dragon Storm"
-		)
-
-	Result.DragonHeart =
-		HasItem(
-			Owned,
-			"Dragonheart",
-			"Dragon Heart"
-		)
-
-	return Result
+	return result
 end
 
---========================================================
--- EXPORT
---========================================================
-
-_G.HoaiHubReadBloxFruitsProgress =
-	ReadBloxFruitsProgress
+_G.HoaiHubReadBloxFruitsProgress = ReadProgress
 
 --========================================================
--- STATUS CACHE
+-- STATUS
 --========================================================
 
 local LastStatus = nil
 
-local function ApplyStatus(Text)
-
-	if LastStatus == Text then
+local function ApplyStatus(text)
+	if LastStatus == text then
 		return
 	end
 
-	LastStatus = Text
-
-	SetStatus(Text)
+	LastStatus = text
+	SetStatus(text)
 end
 
---========================================================
--- UPDATE STATUS
---========================================================
-
 local function UpdateStatus()
+	local data = ReadProgress()
 
-	local Data =
-		ReadBloxFruitsProgress()
-
-	-- Không đọc được dữ liệu Dojo
-	if not Data.CurrentBelt then
-
+	-- Chưa đọc được Dojo
+	if not data.CurrentBelt then
 		ApplyStatus(
 			"Checking Dojo... / Đang kiểm tra Dojo..."
 		)
-
 		return
 	end
 
-	local Rank =
-		Data.HighestBeltRank
+	-- Đã có belt hiện tại -> lấy belt kế
+	if data.HighestBeltRank > 0
+		and data.HighestBeltRank < #Belts then
 
-	--====================================================
-	-- CÒN ĐAI
-	--====================================================
-
-	if Rank > 0
-		and Rank < #Belts then
-
-		local NextBelt =
-			Belts[Rank + 1]
+		local nextBelt = Belts[data.HighestBeltRank + 1]
 
 		ApplyStatus(
 			"Getting "
-			.. NextBelt.English
+			.. nextBelt.English
 			.. " / Đang lấy "
-			.. NextBelt.VN
+			.. nextBelt.VN
 			.. "..."
 		)
 
 		return
 	end
 
-	--====================================================
-	-- BLACK -> DRAGONSTORM
-	--====================================================
+	-- Black -> Dragonstorm
+	if data.HighestBeltRank >= 8
+		and not data.DragonStorm then
 
-	if Rank >= 8 then
+		ApplyStatus(
+			"Getting Dragonstorm / Đang lấy Dragonstorm..."
+		)
 
-		if not Data.DragonStorm then
+		return
+	end
 
-			ApplyStatus(
-				"Getting Dragonstorm / Đang lấy Dragonstorm..."
-			)
+	-- Dragonstorm -> Dragonheart
+	if data.HighestBeltRank >= 8
+		and data.DragonStorm
+		and not data.DragonHeart then
 
-			return
-		end
+		ApplyStatus(
+			"Getting Dragonheart / Đang lấy Dragonheart..."
+		)
 
-		--================================================
-		-- DRAGONSTORM -> DRAGONHEART
-		--================================================
+		return
+	end
 
-		if not Data.DragonHeart then
-
-			ApplyStatus(
-				"Getting Dragonheart / Đang lấy Dragonheart..."
-			)
-
-			return
-		end
-
-		--================================================
-		-- COMPLETE
-		--================================================
+	-- Hoàn thành
+	if data.HighestBeltRank >= 8
+		and data.DragonStorm
+		and data.DragonHeart then
 
 		ApplyStatus(
 			"Complete / Đã hoàn thành!"
@@ -1008,38 +819,22 @@ local function UpdateStatus()
 	)
 end
 
---========================================================
--- EXPORT CHECK
---========================================================
-
-_G.HoaiHubCheckProgress =
-	UpdateStatus
+_G.HoaiHubCheckProgress = UpdateStatus
 
 --========================================================
--- CHECK LOOP
--- 0.25s / LẦN
+-- LOOP 0.25s
 --========================================================
 
 task.spawn(function()
-
 	while Player.Parent do
+		local ok, err = pcall(UpdateStatus)
 
-		local Success, ErrorMessage =
-			pcall(UpdateStatus)
-
-		if not Success then
-
-			warn(
-				"HOÀI HUB CHECK ERROR:",
-				ErrorMessage
-			)
-
+		if not ok then
+			warn("HOÀI HUB CHECK ERROR:", err)
 		end
 
 		task.wait(0.25)
 	end
-
 end)
 
-print("HOÀI HUB PART 2 LOADED")
-print("CHECK INTERVAL: 0.25s")
+print("HOÀI HUB PART 2: READ-ONLY CHECKER LOADED")
