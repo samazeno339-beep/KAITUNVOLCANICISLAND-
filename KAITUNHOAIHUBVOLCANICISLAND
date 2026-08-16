@@ -582,12 +582,20 @@ Status.Visible = true
 CurrentStatus = ""
 SetStatus("Waiting...")
 
-print("HOÀI HUB PART 1 LOADED")
+print("HOÀI HUB PART 1 LOADED")		
 --========================================================
--- HOÀI HUB - PART 2
--- READ ONLY
+-- HOÀI HUB - BLOX FRUITS READ-ONLY DATA READER
 -- 8 DOJO BELTS + DRAGONSTORM + DRAGONHEART
--- CHECK: 0.25s
+-- CHECK INTERVAL: 0.25s
+--
+-- READ ONLY:
+-- Không quest
+-- Không farm
+-- Không craft
+-- Không equip
+-- Không sửa player data
+-- Không tạo data giả
+-- Không DataStoreService
 --========================================================
 
 local Players = game:GetService("Players")
@@ -596,8 +604,115 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Player = Players.LocalPlayer
 
 --========================================================
--- STATUS
+-- CONFIG
 --========================================================
+
+local CONFIG = {
+	CHECK_INTERVAL = 0.25,
+
+	-- Cache inventory để tránh gọi getInventory quá dày
+	INVENTORY_REFRESH = 1.0,
+
+	DEBUG = false,
+}
+
+--========================================================
+-- BELTS
+--========================================================
+
+local BELTS = {
+	{
+		Key = "White",
+		ItemName = "Dojo Belt (White)",
+		English = "White Belt",
+		VN = "đai Trắng",
+		Rank = 1,
+	},
+
+	{
+		Key = "Yellow",
+		ItemName = "Dojo Belt (Yellow)",
+		English = "Yellow Belt",
+		VN = "đai Vàng",
+		Rank = 2,
+	},
+
+	{
+		Key = "Orange",
+		ItemName = "Dojo Belt (Orange)",
+		English = "Orange Belt",
+		VN = "đai Cam",
+		Rank = 3,
+	},
+
+	{
+		Key = "Green",
+		ItemName = "Dojo Belt (Green)",
+		English = "Green Belt",
+		VN = "đai Xanh Lá",
+		Rank = 4,
+	},
+
+	{
+		Key = "Blue",
+		ItemName = "Dojo Belt (Blue)",
+		English = "Blue Belt",
+		VN = "đai Xanh Dương",
+		Rank = 5,
+	},
+
+	{
+		Key = "Purple",
+		ItemName = "Dojo Belt (Purple)",
+		English = "Purple Belt",
+		VN = "đai Tím",
+		Rank = 6,
+	},
+
+	{
+		Key = "Red",
+		ItemName = "Dojo Belt (Red)",
+		English = "Red Belt",
+		VN = "đai Đỏ",
+		Rank = 7,
+	},
+
+	{
+		Key = "Black",
+		ItemName = "Dojo Belt (Black)",
+		English = "Black Belt",
+		VN = "đai Đen",
+		Rank = 8,
+	},
+}
+
+local BELT_BY_KEY = {}
+
+for _, Belt in ipairs(BELTS) do
+	BELT_BY_KEY[string.lower(Belt.Key)] = Belt
+end
+
+--========================================================
+-- HELPERS
+--========================================================
+
+local function Normalize(Value)
+	if typeof(Value) ~= "string" then
+		return ""
+	end
+
+	Value = Value:gsub("^%s+", "")
+	Value = Value:gsub("%s+$", "")
+	Value = Value:gsub("%s+", " ")
+
+	return string.lower(Value)
+end
+
+local function DebugPrint(...)
+	if CONFIG.DEBUG then
+		print("[HOAI DATA]", ...)
+	end
+end
 
 local function SetStatus(Text)
 	if _G.HoaiHubSetStatus then
@@ -606,92 +721,148 @@ local function SetStatus(Text)
 end
 
 --========================================================
--- BELTS
+-- EMPTY RESULT
 --========================================================
 
-local Belts = {
-	{Key = "White",  English = "White Belt",  VN = "đai Trắng"},
-	{Key = "Yellow", English = "Yellow Belt", VN = "đai Vàng"},
-	{Key = "Orange", English = "Orange Belt", VN = "đai Cam"},
-	{Key = "Green",  English = "Green Belt",  VN = "đai Xanh Lá"},
-	{Key = "Blue",   English = "Blue Belt",   VN = "đai Xanh Dương"},
-	{Key = "Purple", English = "Purple Belt", VN = "đai Tím"},
-	{Key = "Red",    English = "Red Belt",    VN = "đai Đỏ"},
-	{Key = "Black",  English = "Black Belt",  VN = "đai Đen"},
-}
+local function EmptyProgress()
+	return {
+		Belts = {
+			White = false,
+			Yellow = false,
+			Orange = false,
+			Green = false,
+			Blue = false,
+			Purple = false,
+			Red = false,
+			Black = false,
+		},
 
-local BeltIndex = {}
+		HighestBeltRank = 0,
 
-for i, belt in ipairs(Belts) do
-	BeltIndex[string.lower(belt.Key)] = i
+		Dragonstorm = false,
+		Dragonheart = false,
+
+		DataValid = false,
+		Error = nil,
+	}
 end
 
 --========================================================
--- REMOTES
+-- REMOTE FIND
 --========================================================
 
-local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-local CommF_ = Remotes and Remotes:FindFirstChild("CommF_")
-local DojoRemote = Remotes and Remotes:FindFirstChild("RF/InteractDragonQuest")
+local function GetRemotes()
+	local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
 
---========================================================
--- READ DOJO
---========================================================
-
-local function ReadDojo()
-	if not DojoRemote or not DojoRemote:IsA("RemoteFunction") then
-		return nil
+	if not Remotes then
+		return nil, nil, "Remotes folder not found"
 	end
 
-	local ok, result = pcall(function()
+	local DojoRemote = Remotes:FindFirstChild(
+		"RF/InteractDragonQuest"
+	)
+
+	if DojoRemote
+		and not DojoRemote:IsA("RemoteFunction") then
+
+		DojoRemote = nil
+	end
+
+	-- Một số phiên bản có CommF_, một số script cộng đồng
+	-- dùng CommF. Ưu tiên CommF_.
+	local CommF = Remotes:FindFirstChild("CommF_")
+
+	if not CommF then
+		CommF = Remotes:FindFirstChild("CommF")
+	end
+
+	if CommF
+		and not CommF:IsA("RemoteFunction") then
+
+		CommF = nil
+	end
+
+	return DojoRemote, CommF, nil
+end
+
+--========================================================
+-- DOJO READER
+--========================================================
+
+local function ReadCurrentBelt(DojoRemote)
+
+	if not DojoRemote then
+		return nil, "Dojo Remote Not Found"
+	end
+
+	local Success, Result = pcall(function()
 		return DojoRemote:InvokeServer({
 			NPC = "Dojo Trainer",
-			Command = "RequestQuest"
+			Command = "RequestQuest",
 		})
 	end)
 
-	if not ok or type(result) ~= "table" then
-		return nil
+	if not Success then
+		return nil, "Dojo Invoke Failed"
 	end
 
-	return result.BeltName
+	if type(Result) ~= "table" then
+		return nil, "Dojo Response Invalid"
+	end
+
+	-- Chỉ đọc BeltName; không thực hiện quest.
+	local BeltName = Result.BeltName
+
+	if type(BeltName) ~= "string" then
+		return nil, "BeltName Missing"
+	end
+
+	local BeltKey = Normalize(BeltName)
+
+	if not BELT_BY_KEY[BeltKey] then
+		return nil, "Unknown Belt: " .. tostring(BeltName)
+	end
+
+	return BeltName, nil
 end
 
 --========================================================
--- READ INVENTORY
+-- INVENTORY PARSER
 --========================================================
--- Dùng đúng kiểu getInventory() như nguồn Kaitun m gửi.
 
-local function ReadInventory()
-	if not CommF_ then
-		return {}
+local function ParseInventoryResult(RawInventory)
+	local Owned = {}
+
+	if type(RawInventory) ~= "table" then
+		return Owned
 	end
 
-	local ok, result = pcall(function()
-		return CommF_:InvokeServer("getInventory")
-	end)
+	for _, Entry in pairs(RawInventory) do
+		if type(Entry) == "table" then
+			local Name =
+				Entry.Name
+				or Entry.ItemName
+				or Entry.NameItem
+				or Entry.name
+				or Entry.itemName
 
-	if not ok or type(result) ~= "table" then
-		return {}
-	end
-
-	return result
-end
-
-local function InventoryHas(inventory, targetNames)
-	for _, entry in pairs(inventory) do
-		if type(entry) == "table" then
-			local name = entry.Name or entry.ItemName or entry.NameItem
-
-			if type(name) == "string" then
-				local lowerName = string.lower(name)
-
-				for _, target in ipairs(targetNames) do
-					if lowerName == string.lower(target) then
-						return true
-					end
-				end
+			if type(Name) == "string" then
+				Owned[Normalize(Name)] = true
 			end
+		elseif type(Entry) == "string" then
+			Owned[Normalize(Entry)] = true
+		end
+	end
+
+	return Owned
+end
+
+local function HasOwned(Owned, ...)
+	for Index = 1, select("#", ...) do
+		local Name = select(Index, ...)
+
+		if Owned[Normalize(Name)] then
+			return true
 		end
 	end
 
@@ -699,142 +870,258 @@ local function InventoryHas(inventory, targetNames)
 end
 
 --========================================================
--- READ PROGRESS
+-- INVENTORY CACHE
 --========================================================
 
-local function ReadProgress()
-	local currentBelt = ReadDojo()
-	local inventory = ReadInventory()
+local InventoryCache = {
+	Owned = {},
+	LastRead = 0,
+	Error = nil,
+}
 
-	local result = {
-		CurrentBelt = currentBelt,
-		HighestBeltRank = 0,
-		DragonStorm = false,
-		DragonHeart = false,
-	}
-
-	if type(currentBelt) == "string" then
-		local rank = BeltIndex[string.lower(currentBelt)]
-
-		if rank then
-			result.HighestBeltRank = rank
-		end
+local function RefreshInventory(CommF)
+	if not CommF then
+		return false, "Inventory Remote Not Found"
 	end
 
-	result.DragonStorm = InventoryHas(inventory, {
-		"Dragonstorm",
-		"Dragon Storm",
-	})
+	local Now = os.clock()
 
-	result.DragonHeart = InventoryHas(inventory, {
-		"Dragonheart",
-		"Dragon Heart",
-	})
+	if Now - InventoryCache.LastRead
+		< CONFIG.INVENTORY_REFRESH then
 
-	return result
+		return true, nil
+	end
+
+	InventoryCache.LastRead = Now
+
+	local Success, RawInventory = pcall(function()
+		return CommF:InvokeServer("getInventory")
+	end)
+
+	if not Success then
+		InventoryCache.Error = "Inventory Invoke Failed"
+		return false, InventoryCache.Error
+	end
+
+	if type(RawInventory) ~= "table" then
+		InventoryCache.Error = "Inventory Response Invalid"
+		return false, InventoryCache.Error
+	end
+
+	InventoryCache.Owned =
+		ParseInventoryResult(RawInventory)
+
+	InventoryCache.Error = nil
+
+	return true, nil
 end
 
-_G.HoaiHubReadBloxFruitsProgress = ReadProgress
-
 --========================================================
--- STATUS
+-- PARSE PROGRESS
 --========================================================
 
-local LastStatus = nil
+local function ReadBloxFruitsProgress()
 
-local function ApplyStatus(text)
-	if LastStatus == text then
-		return
+	local Progress = EmptyProgress()
+
+	local DojoRemote, CommF, RemoteError =
+		GetRemotes()
+
+	if RemoteError then
+		Progress.Error = RemoteError
+		return Progress
 	end
 
-	LastStatus = text
-	SetStatus(text)
-end
+	--====================================================
+	-- DOJO
+	--====================================================
 
-local function UpdateStatus()
-	local data = ReadProgress()
+	local BeltName, BeltError =
+		ReadCurrentBelt(DojoRemote)
 
-	-- Chưa đọc được Dojo
-	if not data.CurrentBelt then
-		ApplyStatus(
-			"Checking Dojo... / Đang kiểm tra Dojo..."
-		)
-		return
+	if not BeltName then
+		Progress.Error = BeltError
+		return Progress
 	end
 
-	-- Đã có belt hiện tại -> lấy belt kế
-	if data.HighestBeltRank > 0
-		and data.HighestBeltRank < #Belts then
+	local CurrentBelt =
+		BELT_BY_KEY[Normalize(BeltName)]
 
-		local nextBelt = Belts[data.HighestBeltRank + 1]
-
-		ApplyStatus(
-			"Getting "
-			.. nextBelt.English
-			.. " / Đang lấy "
-			.. nextBelt.VN
-			.. "..."
-		)
-
-		return
+	if not CurrentBelt then
+		Progress.Error = "Unknown Belt"
+		return Progress
 	end
 
-	-- Black -> Dragonstorm
-	if data.HighestBeltRank >= 8
-		and not data.DragonStorm then
+	Progress.HighestBeltRank =
+		CurrentBelt.Rank
 
-		ApplyStatus(
-			"Getting Dragonstorm / Đang lấy Dragonstorm..."
-		)
-
-		return
+	for _, Belt in ipairs(BELTS) do
+		Progress.Belts[Belt.Key] =
+			Belt.Rank <= CurrentBelt.Rank
 	end
 
-	-- Dragonstorm -> Dragonheart
-	if data.HighestBeltRank >= 8
-		and data.DragonStorm
-		and not data.DragonHeart then
+	--====================================================
+	-- INVENTORY
+	--====================================================
 
-		ApplyStatus(
-			"Getting Dragonheart / Đang lấy Dragonheart..."
-		)
+	local InventoryOK, InventoryError =
+		RefreshInventory(CommF)
 
-		return
+	-- Nếu chưa đọc inventory được thì trả về lỗi,
+	-- tránh giả vờ Dragonstorm/Dragonheart = false.
+	if not InventoryOK then
+		Progress.Error = InventoryError
+		return Progress
 	end
 
-	-- Hoàn thành
-	if data.HighestBeltRank >= 8
-		and data.DragonStorm
-		and data.DragonHeart then
+	local Owned = InventoryCache.Owned
 
-		ApplyStatus(
-			"Complete / Đã hoàn thành!"
+	Progress.Dragonstorm =
+		HasOwned(
+			Owned,
+			"Dragonstorm",
+			"Dragon Storm"
 		)
 
-		return
-	end
+	Progress.Dragonheart =
+		HasOwned(
+			Owned,
+			"Dragonheart",
+			"Dragon Heart"
+		)
 
-	ApplyStatus(
-		"Checking Dojo... / Đang kiểm tra Dojo..."
+	Progress.DataValid = true
+
+	Progress.Error = nil
+
+	DebugPrint(
+		"Belt:",
+		BeltName,
+		"Rank:",
+		Progress.HighestBeltRank,
+		"Dragonstorm:",
+		Progress.Dragonstorm,
+		"Dragonheart:",
+		Progress.Dragonheart
 	)
+
+	return Progress
 end
 
-_G.HoaiHubCheckProgress = UpdateStatus
+--========================================================
+-- NEXT OBJECTIVE
+--========================================================
+
+local function GetNextObjective(Progress)
+
+	if type(Progress) ~= "table" then
+		return "Data Read Failed / Không đọc được dữ liệu"
+	end
+
+	if not Progress.DataValid then
+		return "Data Read Failed / Không đọc được dữ liệu"
+	end
+
+	-- Tìm đai đầu tiên còn thiếu
+	for _, Belt in ipairs(BELTS) do
+
+		if not Progress.Belts[Belt.Key] then
+
+			return
+				"Getting "
+				.. Belt.English
+				.. " / Đang lấy "
+				.. Belt.VN
+				.. "..."
+		end
+
+	end
+
+	-- Đủ Black
+	if not Progress.Dragonstorm then
+		return
+			"Getting Dragonstorm / Đang lấy Dragonstorm..."
+	end
+
+	if not Progress.Dragonheart then
+		return
+			"Getting Dragonheart / Đang lấy Dragonheart..."
+	end
+
+	return "Complete / Đã hoàn thành!"
+end
 
 --========================================================
--- LOOP 0.25s
+-- EXPORT
 --========================================================
+
+_G.HoaiHubReadBloxFruitsProgress =
+	ReadBloxFruitsProgress
+
+_G.HoaiHubGetNextObjective =
+	GetNextObjective
+
+--========================================================
+-- SINGLE CHECK LOOP
+--========================================================
+
+local LastObjective = nil
+local LastError = nil
 
 task.spawn(function()
-	while Player.Parent do
-		local ok, err = pcall(UpdateStatus)
 
-		if not ok then
-			warn("HOÀI HUB CHECK ERROR:", err)
+	while Player.Parent do
+
+		local Success, Progress =
+			pcall(ReadBloxFruitsProgress)
+
+		if not Success then
+
+			if LastError ~= "Reader Exception" then
+				LastError = "Reader Exception"
+
+				SetStatus(
+					"Data Read Failed / Không đọc được dữ liệu"
+				)
+
+				warn(
+					"[HOAI DATA] Reader exception:",
+					Progress
+				)
+			end
+
+		else
+
+			LastError = nil
+
+			local Objective =
+				GetNextObjective(Progress)
+
+			if Objective ~= LastObjective then
+
+				LastObjective = Objective
+
+				SetStatus(Objective)
+
+				if CONFIG.DEBUG then
+					print(
+						"[HOAI DATA]",
+						Objective
+					)
+				end
+			end
 		end
 
-		task.wait(0.25)
+		task.wait(CONFIG.CHECK_INTERVAL)
 	end
+
 end)
 
-print("HOÀI HUB PART 2: READ-ONLY CHECKER LOADED")
+--========================================================
+-- INITIAL STATUS
+--========================================================
+
+SetStatus("Waiting...")
+
+print("HOÀI HUB: Read-Only Data Reader Loaded")
+print("Check interval: 0.25s")
