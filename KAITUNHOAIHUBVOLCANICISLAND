@@ -584,64 +584,296 @@ SetStatus("Waiting...")
 
 print("HOÀI HUB PART 1 LOADED")		
 --========================================================
--- HOÀI HUB - DOJO DIAGNOSTIC
--- CHỈ CHẨN ĐOÁN 1 LẦN
+-- BLOX FRUITS INVENTORY DIAGNOSTIC
+-- CHỈ ĐỌC / KHÔNG GỌI REMOTE
 --========================================================
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Modules = ReplicatedStorage:FindFirstChild("Modules")
-assert(Modules, "Không có ReplicatedStorage.Modules")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:FindFirstChildOfClass("PlayerGui")
 
-local Net = Modules:FindFirstChild("Net")
-assert(Net, "Không có ReplicatedStorage.Modules.Net")
+print("==================================================")
+print(" BLOX FRUITS INVENTORY DIAGNOSTIC")
+print("==================================================")
 
-local RF = Net:FindFirstChild("RF")
-assert(RF, "Không có ReplicatedStorage.Modules.Net.RF")
+--========================================================
+-- 1. PLAYER ROOT
+--========================================================
 
-local Remote = RF:FindFirstChild("InteractDragonQuest")
-assert(Remote, "Không tìm thấy InteractDragonQuest")
+print("")
+print("========== PLAYER ROOT ==========")
 
-print("===== DOJO DIAGNOSTIC =====")
-print("Remote:", Remote:GetFullName())
-print("Class:", Remote.ClassName)
-
-local Success, Result = pcall(function()
-	return Remote:InvokeServer({
-		NPC = "Dojo Trainer",
-		Command = "RequestQuest"
-	})
-end)
-
-print("Invoke Success:", Success)
-
-if not Success then
-	warn("Invoke Error:", Result)
-	return
+for _, Object in ipairs(Player:GetChildren()) do
+	print(
+		"[PLAYER]",
+		Object.ClassName,
+		"|",
+		Object.Name
+	)
 end
 
-print("Result Type:", typeof(Result))
-print("Lua Type:", type(Result))
+--========================================================
+-- 2. PLAYER.DATA
+--========================================================
 
-if type(Result) == "table" then
+print("")
+print("========== PLAYER.DATA ==========")
 
-	print("===== RESPONSE KEYS =====")
+local Data = Player:FindFirstChild("Data")
 
-	for Key, Value in pairs(Result) do
-		print(
-			"KEY =",
-			tostring(Key),
-			"| TYPE =",
-			typeof(Value),
-			"| VALUE =",
-			tostring(Value)
-		)
+if not Data then
+	print("[DATA] NOT FOUND")
+else
+	print("[DATA] FOUND:", Data:GetFullName())
+
+	for _, Object in ipairs(Data:GetDescendants()) do
+
+		if Object:IsA("ValueBase")
+			or Object:IsA("Folder")
+			or Object:IsA("Configuration") then
+
+			local ValueText = ""
+
+			pcall(function()
+				if Object:IsA("ValueBase") then
+					ValueText = "VALUE=" .. tostring(Object.Value)
+				end
+			end)
+
+			print(
+				"[DATA]",
+				Object.ClassName,
+				"|",
+				Object:GetFullName(),
+				"|",
+				ValueText
+			)
+		end
 	end
+end
 
-	print("=========================")
+--========================================================
+-- 3. BACKPACK
+--========================================================
+
+print("")
+print("========== BACKPACK ==========")
+
+local Backpack = Player:FindFirstChildOfClass("Backpack")
+
+if not Backpack then
+
+	print("[BACKPACK] NOT FOUND")
 
 else
-	print("Raw Result:", tostring(Result))
+
+	print("[BACKPACK] FOUND")
+
+	for _, Object in ipairs(
+		Backpack:GetDescendants()
+	) do
+
+		print(
+			"[BACKPACK]",
+			Object.ClassName,
+			"|",
+			Object:GetFullName()
+		)
+
+	end
 end
 
-print("==========================")
+--========================================================
+-- 4. CHARACTER
+--========================================================
+
+print("")
+print("========== CHARACTER ==========")
+
+local Character = Player.Character
+
+if not Character then
+
+	print("[CHARACTER] NOT FOUND")
+
+else
+
+	print("[CHARACTER]", Character:GetFullName())
+
+	for _, Object in ipairs(
+		Character:GetDescendants()
+	) do
+
+		-- Chỉ in những object có khả năng liên quan item
+		if Object:IsA("Tool")
+			or Object:IsA("Accessory")
+			or Object:IsA("ValueBase") then
+
+			print(
+				"[CHARACTER]",
+				Object.ClassName,
+				"|",
+				Object:GetFullName()
+			)
+		end
+
+	end
+end
+
+--========================================================
+-- 5. PLAYER GUI - TÌM INVENTORY
+--========================================================
+
+print("")
+print("========== PLAYER GUI INVENTORY ==========")
+
+if not PlayerGui then
+
+	print("[GUI] PlayerGui NOT FOUND")
+
+else
+
+	local FoundGui = false
+
+	for _, Object in ipairs(
+		PlayerGui:GetDescendants()
+	) do
+
+		local Name = string.lower(Object.Name)
+
+		if string.find(Name, "inventory", 1, true)
+			or string.find(Name, "backpack", 1, true)
+			or string.find(Name, "item", 1, true)
+			or string.find(Name, "stash", 1, true)
+			or string.find(Name, "wardrobe", 1, true) then
+
+			FoundGui = true
+
+			print(
+				"[GUI CANDIDATE]",
+				Object.ClassName,
+				"|",
+				Object:GetFullName()
+			)
+
+		end
+
+	end
+
+	if not FoundGui then
+		print("[GUI] Không tìm thấy GUI có tên liên quan Inventory")
+	end
+end
+
+--========================================================
+-- 6. REMOTES LIÊN QUAN INVENTORY
+--========================================================
+
+print("")
+print("========== INVENTORY REMOTE CANDIDATES ==========")
+
+local RemoteFound = false
+
+for _, Object in ipairs(
+	ReplicatedStorage:GetDescendants()
+) do
+
+	if Object:IsA("RemoteFunction")
+		or Object:IsA("RemoteEvent") then
+
+		local FullName =
+			string.lower(Object:GetFullName())
+
+		local ObjectName =
+			string.lower(Object.Name)
+
+		local Keywords = {
+			"inventory",
+			"item",
+			"weapon",
+			"accessory",
+			"stash",
+			"storage",
+			"backpack",
+			"craft",
+			"data",
+			"playerdata"
+		}
+
+		for _, Keyword in ipairs(Keywords) do
+
+			if string.find(
+				FullName,
+				Keyword,
+				1,
+				true
+			)
+			or string.find(
+				ObjectName,
+				Keyword,
+				1,
+				true
+			) then
+
+				RemoteFound = true
+
+				print(
+					"[REMOTE]",
+					Object.ClassName,
+					"|",
+					Object:GetFullName()
+				)
+
+				break
+			end
+		end
+	end
+end
+
+if not RemoteFound then
+	print("[REMOTE] Không tìm thấy remote có tên liên quan inventory")
+end
+
+--========================================================
+-- 7. COMM F
+--========================================================
+
+print("")
+print("========== COMM REMOTES ==========")
+
+local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+
+if not Remotes then
+
+	print("[REMOTES] ReplicatedStorage.Remotes NOT FOUND")
+
+else
+
+	for _, Object in ipairs(
+		Remotes:GetDescendants()
+	) do
+
+		if Object:IsA("RemoteFunction")
+			or Object:IsA("RemoteEvent") then
+
+			print(
+				"[REMOTES]",
+				Object.ClassName,
+				"|",
+				Object:GetFullName()
+			)
+
+		end
+	end
+end
+
+--========================================================
+-- DONE
+--========================================================
+
+print("")
+print("==================================================")
+print(" INVENTORY DIAGNOSTIC COMPLETE")
+print("==================================================")
