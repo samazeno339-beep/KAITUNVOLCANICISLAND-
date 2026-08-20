@@ -1,1283 +1,1575 @@
---========================================================--
---                     HOAIHUB
---                  hoài làm script
---========================================================--
+--==================================================
+-- HOAIHUB
+-- Purple Kaitun UI
+-- READ ONLY DATA CHECKER
+-- AUTO SELECT MARINES
+--
+-- Check:
+-- 8 Dojo Belts
+-- Dragonstorm
+-- Dragonheart
+--
+-- Inventory scan: every 1 second
+--==================================================
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
 
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
+local Player = Players.LocalPlayer
 
---========================================================--
+--==================================================
 -- CONFIG
---========================================================--
+--==================================================
 
 local CONFIG = {
-	AimAssist = false,
-	AimFOV = 160,
-	AimSmooth = 0.25,
+    Width = 430,
+    Height = 220,
 
-	ESPEnemy = false,
-	ESPTeam = false,
-	ESPNPC = false,
-	ESPChest = false,
+    Background = Color3.fromRGB(15, 13, 21),
+    Secondary = Color3.fromRGB(24, 20, 32),
 
-	Fly = false,
-	FlySpeed = 70,
-	FlyUp = false,
-	FlyDown = false,
+    Text = Color3.fromRGB(245, 240, 250),
+    SubText = Color3.fromRGB(165, 155, 175),
 
-	AutoFarm = false,
+    Purple = Color3.fromRGB(170, 70, 255),
+    Pink = Color3.fromRGB(255, 105, 220),
 
-	Speed = 35,
-	JumpPower = 70,
+    ToggleKey = Enum.KeyCode.RightControl,
 
-	FixLag = false,
+    CheckInterval = 1,
+
+    AutoSelectMarines = true,
+    MarineTimeout = 15,
+    MarineRetryInterval = 0.5
 }
 
---========================================================--
--- GUI
---========================================================--
+--==================================================
+-- CLEAN OLD UI
+--==================================================
 
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "HoaiHub"
-Gui.ResetOnSpawn = false
-Gui.IgnoreGuiInset = true
-Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+pcall(function()
+    local Old = CoreGui:FindFirstChild("HoaiHubUI")
 
---========================================================--
--- OPEN BUTTON
---========================================================--
+    if Old then
+        Old:Destroy()
+    end
+end)
 
-local OpenButton = Instance.new("TextButton")
-OpenButton.Name = "HOAIHUB"
-OpenButton.Size = UDim2.fromOffset(105, 38)
-OpenButton.Position = UDim2.new(0, 15, 0.5, -19)
-OpenButton.BackgroundColor3 = Color3.fromRGB(22, 15, 28)
-OpenButton.BorderSizePixel = 0
-OpenButton.Text = "HOAIHUB"
-OpenButton.TextColor3 = Color3.fromRGB(190, 95, 255)
-OpenButton.TextSize = 17
-OpenButton.Font = Enum.Font.GothamBold
-OpenButton.Visible = false
-OpenButton.Parent = Gui
+--==================================================
+-- UTIL
+--==================================================
 
-local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(0, 10)
-OpenCorner.Parent = OpenButton
+local function Create(Class, Properties, Parent)
+    local Object = Instance.new(Class)
 
-local OpenStroke = Instance.new("UIStroke")
-OpenStroke.Color = Color3.fromRGB(255, 90, 190)
-OpenStroke.Thickness = 2
-OpenStroke.Parent = OpenButton
+    for Property, Value in pairs(Properties) do
+        Object[Property] = Value
+    end
 
---========================================================--
+    Object.Parent = Parent
+    return Object
+end
+
+local function Corner(Object, Radius)
+    local C = Instance.new("UICorner")
+    C.CornerRadius = UDim.new(0, Radius)
+    C.Parent = Object
+    return C
+end
+
+local function Tween(Object, Time, Properties)
+    return TweenService:Create(
+        Object,
+        TweenInfo.new(
+            Time,
+            Enum.EasingStyle.Quart,
+            Enum.EasingDirection.Out
+        ),
+        Properties
+    )
+end
+
+--==================================================
+-- SCREEN GUI
+--==================================================
+
+local ScreenGui = Create("ScreenGui", {
+    Name = "HoaiHubUI",
+    ResetOnSpawn = false,
+    IgnoreGuiInset = true,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+}, CoreGui)
+
+--==================================================
 -- MAIN
---========================================================--
-
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Size = UDim2.fromOffset(340, 390)
-Main.Position = UDim2.new(0.5, -170, 0.5, -195)
-Main.BackgroundColor3 = Color3.fromRGB(22, 16, 28)
-Main.BorderSizePixel = 0
-Main.Parent = Gui
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 13)
-MainCorner.Parent = Main
-
-local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(210, 100, 255)
-MainStroke.Thickness = 1.5
-MainStroke.Parent = Main
-
---========================================================--
--- HEADER
---========================================================--
-
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 42)
-Header.BackgroundTransparency = 1
-Header.Parent = Main
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -80, 1, 0)
-Title.Position = UDim2.fromOffset(12, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "hoài làm script"
-Title.TextColor3 = Color3.fromRGB(220, 150, 255)
-Title.TextSize = 18
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
-
-local HideButton = Instance.new("TextButton")
-HideButton.Size = UDim2.fromOffset(30, 30)
-HideButton.Position = UDim2.new(1, -38, 0, 6)
-HideButton.BackgroundColor3 = Color3.fromRGB(50, 30, 60)
-HideButton.BorderSizePixel = 0
-HideButton.Text = "−"
-HideButton.TextColor3 = Color3.fromRGB(255, 180, 240)
-HideButton.TextSize = 20
-HideButton.Font = Enum.Font.GothamBold
-HideButton.Parent = Header
-
-local HideCorner = Instance.new("UICorner")
-HideCorner.CornerRadius = UDim.new(0, 8)
-HideCorner.Parent = HideButton
-
---========================================================--
--- TABS
---========================================================--
-
-local TabBar = Instance.new("Frame")
-TabBar.Size = UDim2.new(1, -16, 0, 38)
-TabBar.Position = UDim2.fromOffset(8, 45)
-TabBar.BackgroundColor3 = Color3.fromRGB(31, 23, 38)
-TabBar.BorderSizePixel = 0
-TabBar.Parent = Main
-
-local TabCorner = Instance.new("UICorner")
-TabCorner.CornerRadius = UDim.new(0, 9)
-TabCorner.Parent = TabBar
-
-local TabLayout = Instance.new("UIListLayout")
-TabLayout.FillDirection = Enum.FillDirection.Horizontal
-TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-TabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-TabLayout.Padding = UDim.new(0, 4)
-TabLayout.Parent = TabBar
-
-local Pages = {}
-
-local function CreateTab(Name)
-
-	local Button = Instance.new("TextButton")
-	Button.Size = UDim2.fromOffset(76, 30)
-	Button.BackgroundColor3 = Color3.fromRGB(42, 30, 50)
-	Button.BorderSizePixel = 0
-	Button.Text = Name
-	Button.TextColor3 = Color3.fromRGB(210, 180, 220)
-	Button.TextSize = 12
-	Button.Font = Enum.Font.GothamBold
-	Button.Parent = TabBar
-
-	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 7)
-	Corner.Parent = Button
-
-	local Page = Instance.new("ScrollingFrame")
-	Page.Size = UDim2.new(1, -16, 1, -92)
-	Page.Position = UDim2.fromOffset(8, 86)
-	Page.BackgroundTransparency = 1
-	Page.BorderSizePixel = 0
-	Page.ScrollBarThickness = 3
-	Page.ScrollBarImageColor3 = Color3.fromRGB(190, 90, 255)
-	Page.Visible = false
-	Page.CanvasSize = UDim2.new()
-	Page.Parent = Main
-
-	local Layout = Instance.new("UIListLayout")
-	Layout.Padding = UDim.new(0, 6)
-	Layout.Parent = Page
-
-	Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		Page.CanvasSize = UDim2.new(
-			0,
-			0,
-			0,
-			Layout.AbsoluteContentSize.Y + 10
-		)
-	end)
-
-	Pages[Name] = {
-		Button = Button,
-		Page = Page
-	}
-
-	Button.MouseButton1Click:Connect(function()
-
-		for _, Data in pairs(Pages) do
-			Data.Page.Visible = false
-			Data.Button.BackgroundColor3 =
-				Color3.fromRGB(42, 30, 50)
-			Data.Button.TextColor3 =
-				Color3.fromRGB(210, 180, 220)
-		end
-
-		Page.Visible = true
-		Button.BackgroundColor3 =
-			Color3.fromRGB(105, 50, 125)
-		Button.TextColor3 =
-			Color3.fromRGB(255, 220, 255)
-	end)
-
-	return Page
-end
-
-local CombatTab = CreateTab("Combat")
-local VisualTab = CreateTab("Visual")
-local MoveTab = CreateTab("Move")
-local MiscTab = CreateTab("Misc")
-
---========================================================--
--- FOV
---========================================================--
-
-local FOV = Instance.new("Frame")
-FOV.Name = "AimFOV"
-FOV.AnchorPoint = Vector2.new(0.5, 0.5)
-FOV.Size = UDim2.fromOffset(
-	CONFIG.AimFOV * 2,
-	CONFIG.AimFOV * 2
-)
-FOV.Position = UDim2.fromScale(0.5, 0.5)
-FOV.BackgroundTransparency = 1
-FOV.Visible = false
-FOV.Parent = Gui
-
-local FOVCorner = Instance.new("UICorner")
-FOVCorner.CornerRadius = UDim.new(1, 0)
-FOVCorner.Parent = FOV
-
-local FOVStroke = Instance.new("UIStroke")
-FOVStroke.Color = Color3.fromRGB(210, 120, 255)
-FOVStroke.Thickness = 2
-FOVStroke.Parent = FOV
-
---========================================================--
--- FLY MOBILE CONTROLS
---========================================================--
-
-local FlyControls = Instance.new("Frame")
-FlyControls.Name = "FlyControls"
-FlyControls.Size = UDim2.fromOffset(110, 100)
-FlyControls.Position = UDim2.new(1, -125, 1, -120)
-FlyControls.BackgroundTransparency = 1
-FlyControls.Visible = false
-FlyControls.Parent = Gui
-
-local FlyLayout = Instance.new("UIListLayout")
-FlyLayout.Padding = UDim.new(0, 6)
-FlyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-FlyLayout.Parent = FlyControls
-
-local function CreateFlyButton(Text)
-
-	local Button = Instance.new("TextButton")
-	Button.Size = UDim2.fromOffset(100, 42)
-	Button.BackgroundColor3 = Color3.fromRGB(35, 23, 44)
-	Button.BorderSizePixel = 0
-	Button.Text = Text
-	Button.TextColor3 = Color3.fromRGB(220, 150, 255)
-	Button.TextSize = 15
-	Button.Font = Enum.Font.GothamBold
-	Button.AutoButtonColor = false
-	Button.Parent = FlyControls
-
-	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 10)
-	Corner.Parent = Button
-
-	local Stroke = Instance.new("UIStroke")
-	Stroke.Color = Color3.fromRGB(255, 90, 190)
-	Stroke.Thickness = 1.5
-	Stroke.Parent = Button
-
-	return Button
-end
-
-local FlyUpButton = CreateFlyButton("▲ BAY")
-local FlyDownButton = CreateFlyButton("▼ XUỐNG")
-
-local function BindHold(Button, Property)
-
-	Button.InputBegan:Connect(function(Input)
-
-		if Input.UserInputType == Enum.UserInputType.MouseButton1
-			or Input.UserInputType == Enum.UserInputType.Touch then
-
-			CONFIG[Property] = true
-		end
-	end)
-
-	Button.InputEnded:Connect(function(Input)
-
-		if Input.UserInputType == Enum.UserInputType.MouseButton1
-			or Input.UserInputType == Enum.UserInputType.Touch then
-
-			CONFIG[Property] = false
-		end
-	end)
-end
-
-BindHold(FlyUpButton, "FlyUp")
-BindHold(FlyDownButton, "FlyDown")
-
---========================================================--
--- ESP
---========================================================--
-
-local ESPFolder = Instance.new("Folder")
-ESPFolder.Name = "HoaiESP"
-ESPFolder.Parent = Gui
-
-local function ClearESP()
-
-	for _, Object in ipairs(ESPFolder:GetChildren()) do
-		Object:Destroy()
-	end
-end
-
-local function AddESP(Model, Color, Text)
-
-	if not Model:IsA("Model") then
-		return
-	end
-
-	if Model == LocalPlayer.Character then
-		return
-	end
-
-	local Root =
-		Model:FindFirstChild("HumanoidRootPart")
-		or Model.PrimaryPart
-
-	if not Root then
-		return
-	end
-
-	local Highlight = Instance.new("Highlight")
-	Highlight.Name = "HoaiHighlight"
-	Highlight.Adornee = Model
-	Highlight.FillColor = Color
-	Highlight.OutlineColor = Color3.new(1, 1, 1)
-	Highlight.FillTransparency = 0.65
-	Highlight.Parent = ESPFolder
-
-	local Billboard = Instance.new("BillboardGui")
-	Billboard.Name = "ESPText"
-	Billboard.Adornee = Root
-	Billboard.Size = UDim2.fromOffset(180, 32)
-	Billboard.StudsOffset = Vector3.new(0, 3, 0)
-	Billboard.AlwaysOnTop = true
-	Billboard.Parent = ESPFolder
-
-	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.fromScale(1, 1)
-	Label.BackgroundTransparency = 1
-	Label.Text = Text
-	Label.TextColor3 = Color
-	Label.TextStrokeTransparency = 0
-	Label.TextSize = 13
-	Label.Font = Enum.Font.GothamBold
-	Label.Parent = Billboard
-end
-
---========================================================--
--- TEAM CHECK
---========================================================--
-
-local function IsTeammate(Player)
-
-	if not LocalPlayer.Team or not Player.Team then
-		return false
-	end
-
-	return LocalPlayer.Team == Player.Team
-end
-
-local function IsEnemy(Player)
-
-	return not IsTeammate(Player)
-end
-
-local function UpdateESP()
-
-	ClearESP()
-
-	for _, Player in ipairs(Players:GetPlayers()) do
-
-		if Player ~= LocalPlayer
-			and Player.Character then
-
-			if CONFIG.ESPTeam and IsTeammate(Player) then
-
-				AddESP(
-					Player.Character,
-					Color3.fromRGB(80, 180, 255),
-					"TEAM: " .. Player.Name
-				)
-
-			elseif CONFIG.ESPEnemy and IsEnemy(Player) then
-
-				AddESP(
-					Player.Character,
-					Color3.fromRGB(255, 80, 100),
-					"ENEMY: " .. Player.Name
-				)
-
-			end
-		end
-	end
-
-	if CONFIG.ESPNPC then
-
-		for _, Object in ipairs(workspace:GetDescendants()) do
-
-			if Object:IsA("Model")
-				and Object ~= LocalPlayer.Character
-				and Object:FindFirstChildOfClass("Humanoid")
-				and not Players:GetPlayerFromCharacter(Object) then
-
-				AddESP(
-					Object,
-					Color3.fromRGB(255, 180, 70),
-					"NPC: " .. Object.Name
-				)
-			end
-		end
-	end
-
-	if CONFIG.ESPChest then
-
-		for _, Object in ipairs(workspace:GetDescendants()) do
-
-			if Object:IsA("Model") then
-
-				local Name =
-					string.lower(Object.Name)
-
-				if string.find(Name, "chest")
-					or string.find(Name, "treasure")
-					or string.find(Name, "crate") then
-
-					AddESP(
-						Object,
-						Color3.fromRGB(255, 225, 80),
-						"CHEST: " .. Object.Name
-					)
-				end
-			end
-		end
-	end
-end
-
---========================================================--
--- AIM - ENEMY ONLY
---========================================================--
-
-local function GetNearestEnemy()
-
-	local Center = Vector2.new(
-		Camera.ViewportSize.X / 2,
-		Camera.ViewportSize.Y / 2
-	)
-
-	local BestTarget = nil
-	local BestDistance = CONFIG.AimFOV
-
-	for _, Player in ipairs(Players:GetPlayers()) do
-
-		if Player ~= LocalPlayer
-			and Player.Character
-			and IsEnemy(Player) then
-
-			local Humanoid =
-				Player.Character:FindFirstChildOfClass("Humanoid")
-
-			local Root =
-				Player.Character:FindFirstChild("HumanoidRootPart")
-
-			if Humanoid
-				and Root
-				and Humanoid.Health > 0 then
-
-				local ScreenPosition, Visible =
-					Camera:WorldToViewportPoint(
-						Root.Position
-					)
-
-				if Visible then
-
-					local Distance =
-						(
-							Vector2.new(
-								ScreenPosition.X,
-								ScreenPosition.Y
-							) - Center
-						).Magnitude
-
-					if Distance < BestDistance then
-						BestDistance = Distance
-						BestTarget = Root
-					end
-				end
-			end
-		end
-	end
-
-	return BestTarget
-end
-
-RunService.RenderStepped:Connect(function()
-
-	if not CONFIG.AimAssist then
-		return
-	end
-
-	local Target = GetNearestEnemy()
-
-	if Target then
-
-		Camera.CFrame =
-			Camera.CFrame:Lerp(
-				CFrame.lookAt(
-					Camera.CFrame.Position,
-					Target.Position
-				),
-				CONFIG.AimSmooth
-			)
-	end
-end)
-
---========================================================--
--- FLY
---========================================================--
-
-local FlyConnection
-local FlyVelocity
-
-local function StopFly()
-
-	if FlyConnection then
-		FlyConnection:Disconnect()
-		FlyConnection = nil
-	end
-
-	if FlyVelocity then
-		FlyVelocity:Destroy()
-		FlyVelocity = nil
-	end
-
-	CONFIG.FlyUp = false
-	CONFIG.FlyDown = false
-	FlyControls.Visible = false
-end
-
-local function StartFly()
-
-	StopFly()
-
-	local Character = LocalPlayer.Character
-	if not Character then
-		return
-	end
-
-	local Root =
-		Character:FindFirstChild("HumanoidRootPart")
-
-	local Humanoid =
-		Character:FindFirstChildOfClass("Humanoid")
-
-	if not Root or not Humanoid then
-		return
-	end
-
-	FlyVelocity = Instance.new("BodyVelocity")
-	FlyVelocity.Name = "HoaiFly"
-	FlyVelocity.MaxForce =
-		Vector3.new(math.huge, math.huge, math.huge)
-	FlyVelocity.Velocity = Vector3.zero
-	FlyVelocity.Parent = Root
-
-	FlyControls.Visible = true
-
-	FlyConnection =
-		RunService.RenderStepped:Connect(function()
-
-			if not CONFIG.Fly
-				or not Root.Parent then
-
-				StopFly()
-				return
-			end
+--==================================================
 
-			-- Joystick mobile / WASD PC
-			local Direction =
-				Humanoid.MoveDirection
+local Main = Create("Frame", {
+    Name = "Main",
 
-			-- BAY / XUỐNG
-			local Vertical = 0
-
-			if CONFIG.FlyUp
-				or UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-
-				Vertical += 1
-			end
-
-			if CONFIG.FlyDown
-				or UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-
-				Vertical -= 1
-			end
+    Size = UDim2.fromOffset(
+        CONFIG.Width,
+        CONFIG.Height
+    ),
 
-			local Velocity =
-				Direction * CONFIG.FlySpeed
+    Position = UDim2.new(
+        0.5,
+        -CONFIG.Width / 2,
+        0.5,
+        -CONFIG.Height / 2
+    ),
 
-			Velocity +=
-				Vector3.new(0, Vertical * CONFIG.FlySpeed, 0)
-
-			FlyVelocity.Velocity = Velocity
-		end)
-end
---========================================================--
--- AUTO FARM
---========================================================--
+    BackgroundColor3 = CONFIG.Background,
+    BorderSizePixel = 0
+}, ScreenGui)
 
-local function FindNearestNPC()
+Corner(Main, 16)
 
-	local Character = LocalPlayer.Character
+Create("UIStroke", {
+    Color = Color3.fromRGB(120, 55, 170),
+    Thickness = 1,
+    Transparency = 0.45
+}, Main)
 
-	if not Character then
-		return nil
-	end
+Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(
+            0,
+            Color3.fromRGB(17, 13, 25)
+        ),
 
-	local Root =
-		Character:FindFirstChild("HumanoidRootPart")
+        ColorSequenceKeypoint.new(
+            0.5,
+            Color3.fromRGB(24, 15, 34)
+        ),
 
-	if not Root then
-		return nil
-	end
+        ColorSequenceKeypoint.new(
+            1,
+            Color3.fromRGB(14, 12, 19)
+        )
+    }),
 
-	local Nearest
-	local Distance = math.huge
+    Rotation = 135
+}, Main)
 
-	for _, Object in ipairs(workspace:GetDescendants()) do
-
-		if Object:IsA("Model")
-			and Object ~= Character
-			and Object:FindFirstChildOfClass("Humanoid")
-			and Object:FindFirstChild("HumanoidRootPart")
-			and not Players:GetPlayerFromCharacter(Object) then
-
-			local Humanoid =
-				Object:FindFirstChildOfClass("Humanoid")
-
-			local NPCRoot =
-				Object:FindFirstChild("HumanoidRootPart")
-
-			if Humanoid
-				and NPCRoot
-				and Humanoid.Health > 0 then
-
-				local CurrentDistance =
-					(Root.Position - NPCRoot.Position).Magnitude
-
-				if CurrentDistance < Distance then
-					Distance = CurrentDistance
-					Nearest = Object
-				end
-			end
-		end
-	end
-
-	return Nearest
-end
-
-task.spawn(function()
-
-	while task.wait(0.2) do
-
-		if CONFIG.AutoFarm then
-
-			local Character = LocalPlayer.Character
-
-			local Root =
-				Character
-				and Character:FindFirstChild("HumanoidRootPart")
-
-			if Root then
-
-				local NPC = FindNearestNPC()
-
-				if NPC
-					and NPC:FindFirstChild("HumanoidRootPart") then
-
-					Root.CFrame =
-						NPC.HumanoidRootPart.CFrame
-						* CFrame.new(0, 3, 5)
-				end
-			end
-		end
-	end
-end)
-
---========================================================--
--- FIX LAG
---========================================================--
-
-local function ApplyFixLag()
-
-	for _, Object in ipairs(workspace:GetDescendants()) do
-
-		if Object:IsA("ParticleEmitter")
-			or Object:IsA("Trail")
-			or Object:IsA("Beam")
-			or Object:IsA("Smoke")
-			or Object:IsA("Fire")
-			or Object:IsA("Sparkles") then
-
-			Object.Enabled = false
-
-		elseif Object:IsA("BasePart") then
-
-			Object.CastShadow = false
-		end
-	end
-
-	for _, Object in ipairs(Lighting:GetChildren()) do
-
-		if Object:IsA("PostEffect") then
-			Object.Enabled = false
-		end
-	end
-end
-
---========================================================--
--- VALUE INPUT
---========================================================--
-
-local function CreateValueBox(
-	Parent,
-	Text,
-	DefaultValue,
-	Callback
-)
-
-	local Holder = Instance.new("Frame")
-	Holder.Size = UDim2.new(1, -4, 0, 38)
-	Holder.BackgroundColor3 =
-		Color3.fromRGB(39, 28, 46)
-	Holder.BorderSizePixel = 0
-	Holder.Parent = Parent
-
-	local HolderCorner = Instance.new("UICorner")
-	HolderCorner.CornerRadius = UDim.new(0, 8)
-	HolderCorner.Parent = Holder
-
-	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(1, -105, 1, 0)
-	Label.Position = UDim2.fromOffset(10, 0)
-	Label.BackgroundTransparency = 1
-	Label.Text = Text
-	Label.TextColor3 =
-		Color3.fromRGB(235, 220, 245)
-	Label.TextSize = 13
-	Label.Font = Enum.Font.Gotham
-	Label.TextXAlignment =
-		Enum.TextXAlignment.Left
-	Label.Parent = Holder
-
-	local Box = Instance.new("TextBox")
-	Box.Size = UDim2.fromOffset(85, 28)
-	Box.Position = UDim2.new(1, -92, 0.5, -14)
-	Box.BackgroundColor3 =
-		Color3.fromRGB(27, 20, 33)
-	Box.BorderSizePixel = 0
-	Box.Text = tostring(DefaultValue)
-	Box.TextColor3 =
-		Color3.fromRGB(220, 150, 255)
-	Box.TextSize = 13
-	Box.Font = Enum.Font.GothamBold
-	Box.ClearTextOnFocus = false
-	Box.Parent = Holder
-
-	local BoxCorner = Instance.new("UICorner")
-	BoxCorner.CornerRadius = UDim.new(0, 6)
-	BoxCorner.Parent = Box
-
-	local function Apply()
-
-		local Number =
-			tonumber(Box.Text)
-
-		if Number then
-
-			Number = math.clamp(
-				Number,
-				0,
-				1000
-			)
-
-			Box.Text = tostring(Number)
-			Callback(Number)
-
-		else
-
-			Box.Text = tostring(DefaultValue)
-			Callback(DefaultValue)
-
-		end
-	end
-
-	Box.FocusLost:Connect(Apply)
-
-	return Box
-end
-
---========================================================--
--- SPEED / JUMP / FLY SPEED
---========================================================--
-
-CreateValueBox(
-	MoveTab,
-	"Speed",
-	CONFIG.Speed,
-	function(Value)
-
-		CONFIG.Speed = Value
-
-	end
-)
-
-CreateValueBox(
-	MoveTab,
-	"Jump Power",
-	CONFIG.JumpPower,
-	function(Value)
-
-		CONFIG.JumpPower = Value
-
-	end
-)
-
-CreateValueBox(
-	MoveTab,
-	"Fly Speed",
-	CONFIG.FlySpeed,
-	function(Value)
-
-		CONFIG.FlySpeed = Value
-
-	end
-)
-
---========================================================--
--- TOGGLE
---========================================================--
-
-local function CreateToggle(
-	Parent,
-	Text,
-	Callback
-)
-
-	local Button = Instance.new("TextButton")
-	Button.Size = UDim2.new(1, -4, 0, 35)
-	Button.BackgroundColor3 =
-		Color3.fromRGB(39, 28, 46)
-	Button.BorderSizePixel = 0
-	Button.Text =
-		Text .. "  [OFF]"
-	Button.TextColor3 =
-		Color3.fromRGB(235, 220, 245)
-	Button.TextSize = 13
-	Button.Font = Enum.Font.Gotham
-	Button.Parent = Parent
-
-	local Corner = Instance.new("UICorner")
-	Corner.CornerRadius = UDim.new(0, 8)
-	Corner.Parent = Button
-
-	local Enabled = false
-
-	Button.MouseButton1Click:Connect(function()
-
-		Enabled = not Enabled
-
-		if Enabled then
-
-			Button.Text =
-				Text .. "  [ON]"
-
-			Button.BackgroundColor3 =
-				Color3.fromRGB(100, 50, 125)
-
-		else
-
-			Button.Text =
-				Text .. "  [OFF]"
-
-			Button.BackgroundColor3 =
-				Color3.fromRGB(39, 28, 46)
-		end
-
-		Callback(Enabled)
-	end)
-
-	return Button
-end
-
---========================================================--
--- COMBAT
---========================================================--
-
-CreateToggle(
-	CombatTab,
-	"Aim Enemy",
-	function(Value)
-
-		CONFIG.AimAssist = Value
-		FOV.Visible = Value
-	end
-)
-
-CreateToggle(
-	CombatTab,
-	"Aim FOV",
-	function(Value)
-
-		FOV.Visible =
-			Value and CONFIG.AimAssist
-	end
-)
-
-CreateToggle(
-	CombatTab,
-	"Auto Farm",
-	function(Value)
-
-		CONFIG.AutoFarm = Value
-	end
-)
-
---========================================================--
--- VISUAL
---========================================================--
-
-CreateToggle(
-	VisualTab,
-	"ESP Enemy",
-	function(Value)
-
-		CONFIG.ESPEnemy = Value
-		UpdateESP()
-	end
-)
-
-CreateToggle(
-	VisualTab,
-	"ESP Team",
-	function(Value)
-
-		CONFIG.ESPTeam = Value
-		UpdateESP()
-	end
-)
-
-CreateToggle(
-	VisualTab,
-	"ESP NPC",
-	function(Value)
-
-		CONFIG.ESPNPC = Value
-		UpdateESP()
-	end
-)
-
-CreateToggle(
-	VisualTab,
-	"ESP Chest",
-	function(Value)
-
-		CONFIG.ESPChest = Value
-		UpdateESP()
-	end
-)
-
---========================================================--
--- MOVE
---========================================================--
-
-CreateToggle(
-	MoveTab,
-	"Fly",
-	function(Value)
-
-		CONFIG.Fly = Value
-
-		if Value then
-			StartFly()
-		else
-			StopFly()
-		end
-	end
-)
-
-CreateToggle(
-	MoveTab,
-	"Speed Tween",
-	function(Value)
-
-		if Value then
-
-			local Character =
-				LocalPlayer.Character
-
-			local Humanoid =
-				Character
-				and Character:FindFirstChildOfClass(
-					"Humanoid"
-				)
-
-			if Humanoid then
-
-				TweenService:Create(
-					Humanoid,
-					TweenInfo.new(
-						0.45,
-						Enum.EasingStyle.Quad,
-						Enum.EasingDirection.Out
-					),
-					{
-						WalkSpeed =
-							CONFIG.Speed
-					}
-				):Play()
-			end
-		end
-	end
-)
-
-CreateToggle(
-	MoveTab,
-	"Jump Tween",
-	function(Value)
-
-		if Value then
-
-			local Character =
-				LocalPlayer.Character
-
-			local Humanoid =
-				Character
-				and Character:FindFirstChildOfClass(
-					"Humanoid"
-				)
-
-			if Humanoid then
-
-				Humanoid.UseJumpPower = true
-
-				TweenService:Create(
-					Humanoid,
-					TweenInfo.new(
-						0.45,
-						Enum.EasingStyle.Quad,
-						Enum.EasingDirection.Out
-					),
-					{
-						JumpPower =
-							CONFIG.JumpPower
-					}
-				):Play()
-			end
-		end
-	end
-)
-
---========================================================--
--- MISC
---========================================================--
-
-CreateToggle(
-	MiscTab,
-	"Fix Lag",
-	function(Value)
-
-		CONFIG.FixLag = Value
-
-		if Value then
-			ApplyFixLag()
-		end
-	end
-)
-
---========================================================--
--- DEFAULT TAB
---========================================================--
-
-Pages.Visual.Page.Visible = true
-
-Pages.Visual.Button.BackgroundColor3 =
-	Color3.fromRGB(105, 50, 125)
-
-Pages.Visual.Button.TextColor3 =
-	Color3.fromRGB(255, 220, 255)
-
---========================================================--
--- HIDE / SHOW
---========================================================--
-
-HideButton.MouseButton1Click:Connect(function()
-
-	Main.Visible = false
-	OpenButton.Visible = true
-	FlyControls.Visible = false
-	FOV.Visible = false
-
-end)
-
-OpenButton.MouseButton1Click:Connect(function()
-
-	Main.Visible = true
-	OpenButton.Visible = false
-
-	if CONFIG.Fly then
-		FlyControls.Visible = true
-	end
-
-end)
-
---========================================================--
--- RIGHT CONTROL
---========================================================--
-
-UserInputService.InputBegan:Connect(function(
-	Input,
-	Processed
-)
-
-	if Processed then
-		return
-	end
-
-	if Input.KeyCode ==
-		Enum.KeyCode.RightControl then
-
-		Main.Visible =
-			not Main.Visible
-
-		OpenButton.Visible =
-			not Main.Visible
-
-	end
-end)
-
---========================================================--
+--==================================================
+-- STATUS
+-- IMPORTANT:
+-- Không reset khi hide menu
+--==================================================
+
+local StatusBox = Create("Frame", {
+    Name = "StatusBox",
+
+    Position = UDim2.fromOffset(12, 12),
+
+    Size = UDim2.new(
+        1,
+        -24,
+        0,
+        48
+    ),
+
+    BackgroundColor3 = CONFIG.Secondary,
+    BorderSizePixel = 0,
+
+    Visible = false
+}, Main)
+
+Corner(StatusBox, 10)
+
+Create("TextLabel", {
+    Name = "StatusTitle",
+
+    Position = UDim2.fromOffset(12, 6),
+
+    Size = UDim2.new(
+        1,
+        -24,
+        0,
+        14
+    ),
+
+    BackgroundTransparency = 1,
+
+    Text = "STATUS",
+
+    Font = Enum.Font.GothamBold,
+    TextSize = 9,
+
+    TextColor3 = CONFIG.SubText,
+
+    TextXAlignment = Enum.TextXAlignment.Left
+}, StatusBox)
+
+local Status = Create("TextLabel", {
+    Name = "Status",
+
+    Position = UDim2.fromOffset(12, 21),
+
+    Size = UDim2.new(
+        1,
+        -24,
+        0,
+        20
+    ),
+
+    BackgroundTransparency = 1,
+
+    Text = "",
+
+    Font = Enum.Font.GothamSemibold,
+    TextSize = 13,
+
+    TextColor3 = CONFIG.Text,
+
+    TextXAlignment = Enum.TextXAlignment.Left
+}, StatusBox)
+
+--==================================================
+-- LOGO HOLDER
+--==================================================
+
+local LogoHolder = Create("Frame", {
+    Name = "LogoHolder",
+
+    Size = UDim2.fromOffset(100, 100),
+
+    Position = UDim2.new(
+        0.5,
+        -50,
+        0,
+        72
+    ),
+
+    BackgroundTransparency = 1
+}, Main)
+
+--==================================================
+-- GLOW
+--==================================================
+
+local Glow = Create("Frame", {
+    Name = "Glow",
+
+    Size = UDim2.fromOffset(92, 92),
+
+    Position = UDim2.new(
+        0.5,
+        -46,
+        0.5,
+        -46
+    ),
+
+    BackgroundColor3 = CONFIG.Purple,
+    BackgroundTransparency = 0.88,
+
+    BorderSizePixel = 0,
+
+    ZIndex = 1
+}, LogoHolder)
+
+Corner(Glow, 27)
+
+local Glow2 = Create("Frame", {
+    Name = "Glow2",
+
+    Size = UDim2.fromOffset(82, 82),
+
+    Position = UDim2.new(
+        0.5,
+        -41,
+        0.5,
+        -41
+    ),
+
+    BackgroundColor3 = CONFIG.Pink,
+    BackgroundTransparency = 0.92,
+
+    BorderSizePixel = 0,
+
+    ZIndex = 1
+}, LogoHolder)
+
+Corner(Glow2, 24)
+
+--==================================================
+-- LOGO
+--==================================================
+
+local Logo = Create("Frame", {
+    Name = "Logo",
+
+    Size = UDim2.fromOffset(74, 74),
+
+    Position = UDim2.new(
+        0.5,
+        -37,
+        0.5,
+        -37
+    ),
+
+    BackgroundColor3 = Color3.fromRGB(29, 17, 43),
+    BorderSizePixel = 0,
+
+    ZIndex = 3
+}, LogoHolder)
+
+Corner(Logo, 21)
+
+Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(
+            0,
+            Color3.fromRGB(39, 18, 65)
+        ),
+
+        ColorSequenceKeypoint.new(
+            0.5,
+            Color3.fromRGB(74, 25, 105)
+        ),
+
+        ColorSequenceKeypoint.new(
+            1,
+            Color3.fromRGB(25, 15, 36)
+        )
+    }),
+
+    Rotation = 135
+}, Logo)
+
+local LogoStroke = Create("UIStroke", {
+    Thickness = 2,
+    Transparency = 0
+}, Logo)
+
+Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(
+            0,
+            Color3.fromRGB(115, 35, 255)
+        ),
+
+        ColorSequenceKeypoint.new(
+            0.5,
+            Color3.fromRGB(245, 100, 255)
+        ),
+
+        ColorSequenceKeypoint.new(
+            1,
+            Color3.fromRGB(145, 50, 255)
+        )
+    }),
+
+    Rotation = 45
+}, LogoStroke)
+
+--==================================================
+-- HH
+--==================================================
+
+local HH = Create("TextLabel", {
+    Name = "HH",
+
+    Size = UDim2.fromScale(1, 1),
+
+    BackgroundTransparency = 1,
+
+    Text = "HH",
+
+    Font = Enum.Font.GothamBlack,
+    TextSize = 32,
+
+    TextColor3 = Color3.fromRGB(220, 150, 255),
+
+    TextStrokeTransparency = 0.55,
+    TextStrokeColor3 = Color3.fromRGB(130, 45, 255),
+
+    ZIndex = 5
+}, Logo)
+
+Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(
+            0,
+            Color3.fromRGB(135, 45, 255)
+        ),
+
+        ColorSequenceKeypoint.new(
+            0.5,
+            Color3.fromRGB(255, 145, 255)
+        ),
+
+        ColorSequenceKeypoint.new(
+            1,
+            Color3.fromRGB(150, 65, 255)
+        )
+    }),
+
+    Rotation = 90
+}, HH)
+
+local Shine = Create("Frame", {
+    Size = UDim2.fromOffset(8, 8),
+
+    Position = UDim2.fromOffset(11, 10),
+
+    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+    BackgroundTransparency = 0.25,
+
+    BorderSizePixel = 0,
+    Rotation = 45,
+
+    ZIndex = 6
+}, Logo)
+
+Corner(Shine, 99)
+
+local Shine2 = Create("Frame", {
+    Size = UDim2.fromOffset(4, 4),
+
+    Position = UDim2.new(
+        1,
+        -14,
+        0,
+        12
+    ),
+
+    BackgroundColor3 = CONFIG.Pink,
+
+    BorderSizePixel = 0,
+
+    ZIndex = 6
+}, Logo)
+
+Corner(Shine2, 99)
+
+--==================================================
+-- HOAIHUB TEXT
+--==================================================
+
+local LogoTitle = Create("TextLabel", {
+    Name = "LogoTitle",
+
+    Size = UDim2.new(
+        1,
+        0,
+        0,
+        28
+    ),
+
+    Position = UDim2.new(
+        0,
+        0,
+        0,
+        168
+    ),
+
+    BackgroundTransparency = 1,
+
+    Text = "HOAIHUB",
+
+    Font = Enum.Font.GothamBlack,
+    TextSize = 24,
+
+    TextColor3 = CONFIG.Purple,
+
+    TextStrokeTransparency = 0.8,
+
+    TextXAlignment = Enum.TextXAlignment.Center
+}, Main)
+
+Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(
+            0,
+            Color3.fromRGB(125, 40, 255)
+        ),
+
+        ColorSequenceKeypoint.new(
+            0.5,
+            Color3.fromRGB(245, 110, 255)
+        ),
+
+        ColorSequenceKeypoint.new(
+            1,
+            Color3.fromRGB(145, 55, 255)
+        )
+    })
+}, LogoTitle)
+
+--==================================================
 -- DRAG
---========================================================--
+--==================================================
 
 local Dragging = false
 local DragStart
 local StartPosition
 
-Header.InputBegan:Connect(function(Input)
+Main.InputBegan:Connect(function(Input)
 
-	if Input.UserInputType ==
-		Enum.UserInputType.MouseButton1
-		or Input.UserInputType ==
-		Enum.UserInputType.Touch then
+    if Input.UserInputType == Enum.UserInputType.MouseButton1
+        or Input.UserInputType == Enum.UserInputType.Touch then
 
-		Dragging = true
-		DragStart = Input.Position
-		StartPosition = Main.Position
+        Dragging = true
+        DragStart = Input.Position
+        StartPosition = Main.Position
 
-		Input.Changed:Connect(function()
+        Input.Changed:Connect(function()
 
-			if Input.UserInputState ==
-				Enum.UserInputState.End then
+            if Input.UserInputState == Enum.UserInputState.End then
+                Dragging = false
+            end
 
-				Dragging = false
-			end
-		end)
-	end
+        end)
+
+    end
+
 end)
 
 UserInputService.InputChanged:Connect(function(Input)
 
-	if not Dragging then
-		return
-	end
+    if not Dragging then
+        return
+    end
 
-	if Input.UserInputType ==
-		Enum.UserInputType.MouseMovement
-		or Input.UserInputType ==
-		Enum.UserInputType.Touch then
+    if Input.UserInputType == Enum.UserInputType.MouseMovement
+        or Input.UserInputType == Enum.UserInputType.Touch then
 
-		local Delta =
-			Input.Position - DragStart
+        local Delta = Input.Position - DragStart
 
-		Main.Position = UDim2.new(
-			StartPosition.X.Scale,
-			StartPosition.X.Offset + Delta.X,
-			StartPosition.Y.Scale,
-			StartPosition.Y.Offset + Delta.Y
-		)
-	end
+        Main.Position = UDim2.new(
+            StartPosition.X.Scale,
+            StartPosition.X.Offset + Delta.X,
+
+            StartPosition.Y.Scale,
+            StartPosition.Y.Offset + Delta.Y
+        )
+
+    end
+
 end)
 
---========================================================--
--- RESPAWN / TEAM UPDATE
---========================================================--
+--==================================================
+-- SHOW / HIDE
+--==================================================
 
-LocalPlayer.CharacterAdded:Connect(function()
+local Visible = true
 
-	task.wait(1)
+UserInputService.InputBegan:Connect(function(Input, Processed)
 
-	if CONFIG.Fly then
-		StartFly()
-	end
+    if Processed then
+        return
+    end
 
-	if CONFIG.ESPEnemy
-		or CONFIG.ESPTeam
-		or CONFIG.ESPNPC
-		or CONFIG.ESPChest then
+    if Input.KeyCode ~= CONFIG.ToggleKey then
+        return
+    end
 
-		UpdateESP()
-	end
+    Visible = not Visible
+
+    if Visible then
+
+        Main.Visible = true
+
+        Main.Size = UDim2.fromOffset(
+            CONFIG.Width - 40,
+            CONFIG.Height - 40
+        )
+
+        Tween(Main, 0.35, {
+            Size = UDim2.fromOffset(
+                CONFIG.Width,
+                CONFIG.Height
+            )
+        }):Play()
+
+    else
+
+        -- QUAN TRỌNG:
+        -- Không reset StatusBox.Visible.
+        -- Status vẫn giữ nguyên state khi menu bị ẩn.
+
+        Tween(Main, 0.25, {
+            Size = UDim2.fromOffset(
+                0,
+                0
+            )
+        }):Play()
+
+        task.delay(0.25, function()
+
+            if not Visible then
+                Main.Visible = false
+            end
+
+        end)
+
+    end
+
 end)
 
-LocalPlayer:GetPropertyChangedSignal("Team"):Connect(function()
+--==================================================
+-- STATUS API
+--==================================================
 
-	if CONFIG.ESPEnemy or CONFIG.ESPTeam then
-		UpdateESP()
-	end
-end)
+_G.HoaiHub = {
 
---========================================================--
--- ESP REFRESH
---========================================================--
+    SetStatus = function(Text)
+
+        Status.Text = tostring(Text)
+        StatusBox.Visible = true
+
+    end,
+
+    HideStatus = function()
+
+        -- Chỉ khi gọi HideStatus mới ẩn Status.
+        StatusBox.Visible = false
+
+    end,
+
+    GetUI = function()
+        return Main
+    end
+
+}
+
+--==================================================
+-- 8 DOJO BELTS
+--==================================================
+
+local BELTS = {
+
+    {
+        Key = "White",
+        Display = "White Belt",
+        Aliases = {
+            "white belt",
+            "whitebelt",
+            "dojo belt white",
+            "dojobeltwhite",
+            "dojobelt1"
+        }
+    },
+
+    {
+        Key = "Yellow",
+        Display = "Yellow Belt",
+        Aliases = {
+            "yellow belt",
+            "yellowbelt",
+            "dojo belt yellow",
+            "dojobeltyellow",
+            "dojobelt2"
+        }
+    },
+
+    {
+        Key = "Orange",
+        Display = "Orange Belt",
+        Aliases = {
+            "orange belt",
+            "orangebelt",
+            "dojo belt orange",
+            "dojobeltorange",
+            "dojobelt3"
+        }
+    },
+
+    {
+        Key = "Green",
+        Display = "Green Belt",
+        Aliases = {
+            "green belt",
+            "greenbelt",
+            "dojo belt green",
+            "dojobeltgreen",
+            "dojobelt4"
+        }
+    },
+
+    {
+        Key = "Blue",
+        Display = "Blue Belt",
+        Aliases = {
+            "blue belt",
+            "bluebelt",
+            "dojo belt blue",
+            "dojobeltblue",
+            "dojobelt5"
+        }
+    },
+
+    {
+        Key = "Purple",
+        Display = "Purple Belt",
+        Aliases = {
+            "purple belt",
+            "purplebelt",
+            "dojo belt purple",
+            "dojobeltpurple",
+            "dojobelt6"
+        }
+    },
+
+    {
+        Key = "Red",
+        Display = "Red Belt",
+        Aliases = {
+            "red belt",
+            "redbelt",
+            "dojo belt red",
+            "dojobeltred",
+            "dojobelt7"
+        }
+    },
+
+    {
+        Key = "Black",
+        Display = "Black Belt",
+        Aliases = {
+            "black belt",
+            "blackbelt",
+            "dojo belt black",
+            "dojobeltblack",
+            "dojobelt8"
+        }
+    }
+}
+
+--==================================================
+-- SPECIAL ITEMS
+--==================================================
+
+local SPECIAL_ITEMS = {
+
+    Dragonstorm = {
+        "dragonstorm",
+        "dragon storm"
+    },
+
+    Dragonheart = {
+        "dragonheart",
+        "dragon heart"
+    }
+
+}
+
+--==================================================
+-- PROGRESS
+--==================================================
+
+local Progress = {
+
+    Ready = false,
+    Reading = false,
+
+    Error = nil,
+    LastScan = 0,
+
+    Belts = {
+        White = false,
+        Yellow = false,
+        Orange = false,
+        Green = false,
+        Blue = false,
+        Purple = false,
+        Red = false,
+        Black = false
+    },
+
+    DojoCount = 0,
+
+    Dragonstorm = false,
+    Dragonheart = false,
+
+    TotalChecked = 10,
+    TotalOwned = 0
+}
+
+_G.HoaiHubProgress = Progress
+
+--==================================================
+-- NORMALIZE
+--==================================================
+
+local function Normalize(Value)
+
+    if typeof(Value) ~= "string" then
+        return ""
+    end
+
+    local Text = Value:lower()
+
+    Text = Text:gsub(
+        "[%z\1-\31]",
+        ""
+    )
+
+    Text = Text:gsub(
+        "_",
+        " "
+    )
+
+    Text = Text:gsub(
+        "-",
+        " "
+    )
+
+    Text = Text:gsub(
+        "%s+",
+        " "
+    )
+
+    return Text:match(
+        "^%s*(.-)%s*$"
+    ) or ""
+
+end
+
+--==================================================
+-- ALIAS MATCH
+--==================================================
+
+local function MatchAlias(Text, Aliases)
+
+    Text = Normalize(Text)
+
+    if Text == "" then
+        return false
+    end
+
+    for _, Alias in ipairs(Aliases) do
+
+        if Text == Normalize(Alias) then
+            return true
+        end
+
+    end
+
+    return false
+end
+
+--==================================================
+-- RECURSIVE INVENTORY SEARCH
+--==================================================
+
+local function SearchTable(
+    Data,
+    Aliases,
+    Visited,
+    Depth
+)
+
+    if Depth > 15 then
+        return false
+    end
+
+    local DataType = typeof(Data)
+
+    if DataType == "string" then
+
+        return MatchAlias(
+            Data,
+            Aliases
+        )
+
+    end
+
+    if DataType ~= "table" then
+        return false
+    end
+
+    Visited = Visited or {}
+
+    if Visited[Data] then
+        return false
+    end
+
+    Visited[Data] = true
+
+    -- Keys
+    for Key, Value in pairs(Data) do
+
+        if typeof(Key) == "string" then
+
+            if MatchAlias(
+                Key,
+                Aliases
+            ) then
+
+                if Value ~= false
+                    and Value ~= 0 then
+
+                    return true
+                end
+
+            end
+
+        end
+
+    end
+
+    -- Common fields + recursive
+    for Key, Value in pairs(Data) do
+
+        if typeof(Key) == "string" then
+
+            local NormalizedKey = Normalize(Key)
+
+            if NormalizedKey == "name"
+                or NormalizedKey == "itemname"
+                or NormalizedKey == "displayname"
+                or NormalizedKey == "item"
+                or NormalizedKey == "title"
+                or NormalizedKey == "weapon" then
+
+                if typeof(Value) == "string"
+                    and MatchAlias(
+                        Value,
+                        Aliases
+                    ) then
+
+                    return true
+                end
+
+            end
+
+        end
+
+        if SearchTable(
+            Value,
+            Aliases,
+            Visited,
+            Depth + 1
+        ) then
+
+            return true
+        end
+
+    end
+
+    return false
+end
+
+--==================================================
+-- FIND INVENTORY REMOTE
+--==================================================
+
+local function FindInventoryRemote()
+
+    local Remote = ReplicatedStorage:FindFirstChild(
+        "GetInventory",
+        true
+    )
+
+    if Remote
+        and Remote:IsA("RemoteFunction") then
+
+        return Remote, "direct"
+    end
+
+    local Remotes = ReplicatedStorage:FindFirstChild(
+        "Remotes"
+    )
+
+    if Remotes then
+
+        Remote = Remotes:FindFirstChild(
+            "GetInventory",
+            true
+        )
+
+        if Remote
+            and Remote:IsA("RemoteFunction") then
+
+            return Remote, "direct"
+        end
+
+    end
+
+    Remote = ReplicatedStorage:FindFirstChild(
+        "CommF_",
+        true
+    )
+
+    if Remote
+        and Remote:IsA("RemoteFunction") then
+
+        return Remote, "commf"
+    end
+
+    return nil, nil
+end
+
+--==================================================
+-- GET INVENTORY
+--==================================================
+
+local function GetInventory()
+
+    local Remote, Mode = FindInventoryRemote()
+
+    if not Remote then
+
+        return nil,
+            "GetInventory RemoteFunction not found"
+    end
+
+    if Mode == "direct" then
+
+        local Success, Result = pcall(function()
+
+            return Remote:InvokeServer()
+
+        end)
+
+        if Success
+            and Result ~= nil then
+
+            return Result, nil
+        end
+
+        local Success2, Result2 = pcall(function()
+
+            return Remote:InvokeServer(
+                "getInventory"
+            )
+
+        end)
+
+        if Success2
+            and Result2 ~= nil then
+
+            return Result2, nil
+        end
+
+        return nil,
+            "GetInventory InvokeServer failed"
+    end
+
+    if Mode == "commf" then
+
+        local Success, Result = pcall(function()
+
+            return Remote:InvokeServer(
+                "getInventory"
+            )
+
+        end)
+
+        if Success
+            and Result ~= nil then
+
+            return Result, nil
+        end
+
+        return nil,
+            "CommF_ getInventory failed"
+    end
+
+    return nil, "Unknown RemoteFunction"
+end
+
+--==================================================
+-- RESET
+--==================================================
+
+local function ResetResults()
+
+    for _, Belt in ipairs(BELTS) do
+        Progress.Belts[Belt.Key] = false
+    end
+
+    Progress.DojoCount = 0
+    Progress.Dragonstorm = false
+    Progress.Dragonheart = false
+    Progress.TotalOwned = 0
+end
+
+--==================================================
+-- SCAN
+--==================================================
+
+local function ScanInventory()
+
+    if Progress.Reading then
+        return false
+    end
+
+    Progress.Reading = true
+    Progress.Error = nil
+
+    local Inventory, ErrorMessage = GetInventory()
+
+    if not Inventory then
+
+        Progress.Ready = false
+
+        Progress.Error =
+            ErrorMessage
+            or "Inventory unavailable"
+
+        Progress.Reading = false
+
+        return false
+    end
+
+    ResetResults()
+
+    -- 8 BELTS
+    for _, Belt in ipairs(BELTS) do
+
+        local Owned = SearchTable(
+            Inventory,
+            Belt.Aliases,
+            {},
+            0
+        )
+
+        Progress.Belts[Belt.Key] = Owned
+
+        if Owned then
+            Progress.DojoCount += 1
+            Progress.TotalOwned += 1
+        end
+
+    end
+
+    -- DRAGONSTORM
+    Progress.Dragonstorm = SearchTable(
+        Inventory,
+        SPECIAL_ITEMS.Dragonstorm,
+        {},
+        0
+    )
+
+    if Progress.Dragonstorm then
+        Progress.TotalOwned += 1
+    end
+
+    -- DRAGONHEART
+    Progress.Dragonheart = SearchTable(
+        Inventory,
+        SPECIAL_ITEMS.Dragonheart,
+        {},
+        0
+    )
+
+    if Progress.Dragonheart then
+        Progress.TotalOwned += 1
+    end
+
+    Progress.Ready = true
+    Progress.LastScan = os.clock()
+    Progress.Reading = false
+
+    return true
+end
+
+--==================================================
+-- DOJO STATUS
+--==================================================
+
+local function GetDojoStatus()
+
+    if not Progress.Belts.White then
+        return "Getting White Belt..."
+    end
+
+    if not Progress.Belts.Yellow then
+        return "White Belt ✓  →  Getting Yellow Belt..."
+    end
+
+    if not Progress.Belts.Orange then
+        return "Yellow Belt ✓  →  Getting Orange Belt..."
+    end
+
+    if not Progress.Belts.Green then
+        return "Orange Belt ✓  →  Getting Green Belt..."
+    end
+
+    if not Progress.Belts.Blue then
+        return "Green Belt ✓  →  Getting Blue Belt..."
+    end
+
+    if not Progress.Belts.Purple then
+        return "Blue Belt ✓  →  Getting Purple Belt..."
+    end
+
+    if not Progress.Belts.Red then
+        return "Purple Belt ✓  →  Getting Red Belt..."
+    end
+
+    if not Progress.Belts.Black then
+        return "Red Belt ✓  →  Getting Black Belt..."
+    end
+
+    return "Black Belt ✓  →  Dojo Complete"
+end
+
+--==================================================
+-- OVERALL STATUS
+--==================================================
+
+local function GetCheckStatus()
+
+    if not Progress.Ready then
+
+        if Progress.Error then
+            return "Inventory Error: " ..
+                tostring(Progress.Error)
+        end
+
+        return "Reading Inventory..."
+    end
+
+    if Progress.DojoCount < 8 then
+        return GetDojoStatus()
+    end
+
+    if not Progress.Dragonstorm then
+        return "Dojo Complete ✓  →  Getting Dragonstorm..."
+    end
+
+    if not Progress.Dragonheart then
+        return "Dragonstorm ✓  →  Getting Dragonheart..."
+    end
+
+    return "HOAIHUB Complete ✓"
+end
+
+--==================================================
+-- PUBLIC CHECKER API
+--==================================================
+
+_G.HoaiHubChecker = {
+
+    Scan = function()
+        return ScanInventory()
+    end,
+
+    GetProgress = function()
+        return Progress
+    end,
+
+    GetStatus = function()
+        return GetCheckStatus()
+    end,
+
+    GetDojoStatus = function()
+        return GetDojoStatus()
+    end,
+
+    HasBelt = function(Name)
+
+        if typeof(Name) ~= "string" then
+            return false
+        end
+
+        Name = Name:gsub(
+            "%s+",
+            ""
+        )
+
+        return Progress.Belts[Name] == true
+    end,
+
+    HasDragonstorm = function()
+        return Progress.Dragonstorm == true
+    end,
+
+    HasDragonheart = function()
+        return Progress.Dragonheart == true
+    end,
+
+    IsDojoComplete = function()
+        return Progress.DojoCount == 8
+    end,
+
+    IsComplete = function()
+
+        return
+            Progress.DojoCount == 8
+            and Progress.Dragonstorm == true
+            and Progress.Dragonheart == true
+
+    end
+}
+
+--==================================================
+-- SHOW STATUS MANUALLY
+--==================================================
+
+function _G.HoaiHub.ShowCheckStatus()
+
+    _G.HoaiHub.SetStatus(
+        GetCheckStatus()
+    )
+
+end
+
+--==================================================
+-- AUTO INVENTORY SCAN
+-- EVERY 1 SECOND
+--==================================================
 
 task.spawn(function()
 
-	while task.wait(2) do
+    while ScreenGui
+        and ScreenGui.Parent do
 
-		if CONFIG.ESPEnemy
-			or CONFIG.ESPTeam
-			or CONFIG.ESPNPC
-			or CONFIG.ESPChest then
+        pcall(function()
+            ScanInventory()
+        end)
 
-			UpdateESP()
-		end
-	end
+        task.wait(
+            CONFIG.CheckInterval
+        )
+
+    end
+
 end)
 
---========================================================--
--- LOADED
---========================================================--
+--==================================================
+-- AUTO SELECT MARINES
+--==================================================
 
-print("================================")
-print("          HOAIHUB")
-print("       hoài làm script")
-print("================================")
-print("Aim: ENEMY ONLY")
-print("Fly: Joystick/WASD + BAY/XUONG")
-print("Speed / Jump / Fly Speed: Editable")
-print("================================")
+task.spawn(function()
+
+    if not CONFIG.AutoSelectMarines then
+        return
+    end
+
+    if not game:IsLoaded() then
+        game.Loaded:Wait()
+    end
+
+    if Player.Team then
+
+        print(
+            "HOAIHUB: Team already selected -> " ..
+            Player.Team.Name
+        )
+
+        return
+    end
+
+    local Remotes = ReplicatedStorage:WaitForChild(
+        "Remotes",
+        30
+    )
+
+    if not Remotes then
+
+        warn(
+            "HOAIHUB: Remotes not found"
+        )
+
+        return
+    end
+
+    local CommF_ = Remotes:WaitForChild(
+        "CommF_",
+        30
+    )
+
+    if not CommF_ then
+
+        warn(
+            "HOAIHUB: CommF_ not found"
+        )
+
+        return
+    end
+
+    local Deadline =
+        os.clock() +
+        CONFIG.MarineTimeout
+
+    while Player.Parent
+        and Player.Team == nil
+        and os.clock() < Deadline do
+
+        local Success, Result = pcall(function()
+
+            return CommF_:InvokeServer(
+                "SetTeam",
+                "Marines"
+            )
+
+        end)
+
+        if Success then
+
+            print(
+                "HOAIHUB: SetTeam -> Marines",
+                Result
+            )
+
+        else
+
+            warn(
+                "HOAIHUB: SetTeam failed:",
+                Result
+            )
+
+        end
+
+        task.wait(
+            CONFIG.MarineRetryInterval
+        )
+
+    end
+
+    if Player.Team then
+
+        print(
+            "HOAIHUB: Current Team = " ..
+            Player.Team.Name
+        )
+
+    else
+
+        warn(
+            "HOAIHUB: Marine selection failed"
+        )
+
+    end
+
+end)
+
+--==================================================
+-- OPEN ANIMATION
+--==================================================
+
+Main.Size = UDim2.fromOffset(
+    0,
+    0
+)
+
+Tween(Main, 0.5, {
+
+    Size = UDim2.fromOffset(
+        CONFIG.Width,
+        CONFIG.Height
+    )
+
+}):Play()
+
+--==================================================
+-- DEFAULT
+--==================================================
+
+StatusBox.Visible = false
+
+--==================================================
+-- RAINBOW HH
+--==================================================
+
+local Hue = 0
+
+RunService.RenderStepped:Connect(function()
+
+    Hue = (Hue + 0.0025) % 1
+
+    HH.TextColor3 = Color3.fromHSV(
+        Hue,
+        0.65,
+        1
+    )
+
+end)
+
+--==================================================
+-- GLOW ANIMATION
+--==================================================
+
+task.spawn(function()
+
+    while ScreenGui.Parent do
+
+        Tween(Glow, 1.2, {
+
+            Size = UDim2.fromOffset(
+                100,
+                100
+            ),
+
+            Position = UDim2.new(
+                0.5,
+                -50,
+                0.5,
+                -50
+            ),
+
+            BackgroundTransparency = 0.92
+
+        }):Play()
+
+        Tween(Glow2, 1.2, {
+
+            Size = UDim2.fromOffset(
+                90,
+                90
+            ),
+
+            Position = UDim2.new(
+                0.5,
+                -45,
+                0.5,
+                -45
+            ),
+
+            BackgroundTransparency = 0.95
+
+        }):Play()
+
+        task.wait(1.2)
+
+        Tween(Glow, 1.2, {
+
+            Size = UDim2.fromOffset(
+                92,
+                92
+            ),
+
+            Position = UDim2.new(
+                0.5,
+                -46,
+                0.5,
+                -46
+            ),
+
+            BackgroundTransparency = 0.86
+
+        }):Play()
+
+        Tween(Glow2, 1.2, {
+
+            Size = UDim2.fromOffset(
+                82,
+                82
+            ),
+
+            Position = UDim2.new(
+                0.5,
+                -41,
+                0.5,
+                -41
+            ),
+
+            BackgroundTransparency = 0.90
+
+        }):Play()
+
+        task.wait(1.2)
+
+    end
+
+end)
