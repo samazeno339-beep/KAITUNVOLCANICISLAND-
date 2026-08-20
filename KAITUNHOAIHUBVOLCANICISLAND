@@ -1,15 +1,16 @@
 --==================================================
--- HOAIHUB
--- Purple Kaitun UI
--- READ ONLY DATA CHECKER
+-- HOAIHUB KAITUN
+-- UI + EXTERNAL STATUS + READ-ONLY INVENTORY CHECKER
+-- 8 DOJO BELTS + DRAGONSTORM + DRAGONHEART
+-- CHECK INTERVAL: 1 SECOND
 -- AUTO SELECT MARINES
 --
--- Check:
--- 8 Dojo Belts
--- Dragonstorm
--- Dragonheart
---
--- Inventory scan: every 1 second
+-- STATUS BEHAVIOR:
+-- * Status is OUTSIDE the Main menu.
+-- * Status is shown automatically after a successful scan.
+-- * Status updates every 1 second.
+-- * Hiding Main does NOT hide Status.
+-- * Status only disappears when HideStatus() is called.
 --==================================================
 
 local Players = game:GetService("Players")
@@ -28,6 +29,10 @@ local Player = Players.LocalPlayer
 local CONFIG = {
     Width = 430,
     Height = 220,
+
+    StatusWidth = 430,
+    StatusHeight = 54,
+    StatusGap = 8,
 
     Background = Color3.fromRGB(15, 13, 21),
     Secondary = Color3.fromRGB(24, 20, 32),
@@ -53,9 +58,13 @@ local CONFIG = {
 
 pcall(function()
     local Old = CoreGui:FindFirstChild("HoaiHubUI")
-
     if Old then
         Old:Destroy()
+    end
+
+    local OldToggle = CoreGui:FindFirstChild("HoaiHubToggle")
+    if OldToggle then
+        OldToggle:Destroy()
     end
 end)
 
@@ -79,6 +88,15 @@ local function Corner(Object, Radius)
     C.CornerRadius = UDim.new(0, Radius)
     C.Parent = Object
     return C
+end
+
+local function AddStroke(Object, Color, Thickness, Transparency)
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color
+    Stroke.Thickness = Thickness or 1
+    Stroke.Transparency = Transparency or 0
+    Stroke.Parent = Object
+    return Stroke
 end
 
 local function Tween(Object, Time, Properties)
@@ -105,7 +123,7 @@ local ScreenGui = Create("ScreenGui", {
 }, CoreGui)
 
 --==================================================
--- MAIN
+-- MAIN MENU
 --==================================================
 
 local Main = Create("Frame", {
@@ -124,16 +142,19 @@ local Main = Create("Frame", {
     ),
 
     BackgroundColor3 = CONFIG.Background,
-    BorderSizePixel = 0
+    BorderSizePixel = 0,
+
+    ZIndex = 10
 }, ScreenGui)
 
 Corner(Main, 16)
 
-Create("UIStroke", {
-    Color = Color3.fromRGB(120, 55, 170),
-    Thickness = 1,
-    Transparency = 0.45
-}, Main)
+AddStroke(
+    Main,
+    Color3.fromRGB(120, 55, 170),
+    1,
+    0.45
+)
 
 Create("UIGradient", {
     Color = ColorSequence.new({
@@ -141,57 +162,86 @@ Create("UIGradient", {
             0,
             Color3.fromRGB(17, 13, 25)
         ),
-
         ColorSequenceKeypoint.new(
             0.5,
             Color3.fromRGB(24, 15, 34)
         ),
-
         ColorSequenceKeypoint.new(
             1,
             Color3.fromRGB(14, 12, 19)
         )
     }),
-
     Rotation = 135
 }, Main)
 
 --==================================================
--- STATUS
+-- EXTERNAL STATUS
+--
 -- IMPORTANT:
--- Không reset khi hide menu
+-- This is NOT parented to Main.
+-- It is a sibling of Main inside ScreenGui.
 --==================================================
 
 local StatusBox = Create("Frame", {
     Name = "StatusBox",
 
-    Position = UDim2.fromOffset(12, 12),
+    Size = UDim2.fromOffset(
+        CONFIG.StatusWidth,
+        CONFIG.StatusHeight
+    ),
 
-    Size = UDim2.new(
-        1,
-        -24,
-        0,
-        48
+    Position = UDim2.new(
+        0.5,
+        -CONFIG.StatusWidth / 2,
+        0.5,
+        -CONFIG.Height / 2 - CONFIG.StatusGap - CONFIG.StatusHeight
     ),
 
     BackgroundColor3 = CONFIG.Secondary,
     BorderSizePixel = 0,
 
-    Visible = false
-}, Main)
+    Visible = false,
 
-Corner(StatusBox, 10)
+    ZIndex = 30
+}, ScreenGui)
+
+Corner(StatusBox, 12)
+
+AddStroke(
+    StatusBox,
+    Color3.fromRGB(145, 60, 205),
+    1,
+    0.35
+)
+
+Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(
+            0,
+            Color3.fromRGB(29, 18, 40)
+        ),
+        ColorSequenceKeypoint.new(
+            0.5,
+            Color3.fromRGB(39, 20, 51)
+        ),
+        ColorSequenceKeypoint.new(
+            1,
+            Color3.fromRGB(22, 16, 29)
+        )
+    }),
+    Rotation = 0
+}, StatusBox)
 
 Create("TextLabel", {
     Name = "StatusTitle",
 
-    Position = UDim2.fromOffset(12, 6),
+    Position = UDim2.fromOffset(13, 6),
 
     Size = UDim2.new(
         1,
-        -24,
+        -26,
         0,
-        14
+        13
     ),
 
     BackgroundTransparency = 1,
@@ -203,19 +253,21 @@ Create("TextLabel", {
 
     TextColor3 = CONFIG.SubText,
 
-    TextXAlignment = Enum.TextXAlignment.Left
+    TextXAlignment = Enum.TextXAlignment.Left,
+
+    ZIndex = 31
 }, StatusBox)
 
 local Status = Create("TextLabel", {
     Name = "Status",
 
-    Position = UDim2.fromOffset(12, 21),
+    Position = UDim2.fromOffset(13, 20),
 
     Size = UDim2.new(
         1,
-        -24,
+        -26,
         0,
-        20
+        27
     ),
 
     BackgroundTransparency = 1,
@@ -227,36 +279,45 @@ local Status = Create("TextLabel", {
 
     TextColor3 = CONFIG.Text,
 
-    TextXAlignment = Enum.TextXAlignment.Left
+    TextXAlignment = Enum.TextXAlignment.Left,
+    TextYAlignment = Enum.TextYAlignment.Center,
+
+    TextTruncate = Enum.TextTruncate.AtEnd,
+
+    ZIndex = 31
 }, StatusBox)
 
 --==================================================
--- LOGO HOLDER
+-- LOGO
 --==================================================
 
 local LogoHolder = Create("Frame", {
     Name = "LogoHolder",
 
-    Size = UDim2.fromOffset(100, 100),
+    Size = UDim2.fromOffset(
+        100,
+        100
+    ),
 
     Position = UDim2.new(
         0.5,
         -50,
         0,
-        72
+        55
     ),
 
-    BackgroundTransparency = 1
-}, Main)
+    BackgroundTransparency = 1,
 
---==================================================
--- GLOW
---==================================================
+    ZIndex = 11
+}, Main)
 
 local Glow = Create("Frame", {
     Name = "Glow",
 
-    Size = UDim2.fromOffset(92, 92),
+    Size = UDim2.fromOffset(
+        92,
+        92
+    ),
 
     Position = UDim2.new(
         0.5,
@@ -270,7 +331,7 @@ local Glow = Create("Frame", {
 
     BorderSizePixel = 0,
 
-    ZIndex = 1
+    ZIndex = 11
 }, LogoHolder)
 
 Corner(Glow, 27)
@@ -278,7 +339,10 @@ Corner(Glow, 27)
 local Glow2 = Create("Frame", {
     Name = "Glow2",
 
-    Size = UDim2.fromOffset(82, 82),
+    Size = UDim2.fromOffset(
+        82,
+        82
+    ),
 
     Position = UDim2.new(
         0.5,
@@ -292,19 +356,18 @@ local Glow2 = Create("Frame", {
 
     BorderSizePixel = 0,
 
-    ZIndex = 1
+    ZIndex = 11
 }, LogoHolder)
 
 Corner(Glow2, 24)
 
---==================================================
--- LOGO
---==================================================
-
 local Logo = Create("Frame", {
     Name = "Logo",
 
-    Size = UDim2.fromOffset(74, 74),
+    Size = UDim2.fromOffset(
+        74,
+        74
+    ),
 
     Position = UDim2.new(
         0.5,
@@ -313,10 +376,15 @@ local Logo = Create("Frame", {
         -37
     ),
 
-    BackgroundColor3 = Color3.fromRGB(29, 17, 43),
+    BackgroundColor3 = Color3.fromRGB(
+        29,
+        17,
+        43
+    ),
+
     BorderSizePixel = 0,
 
-    ZIndex = 3
+    ZIndex = 13
 }, LogoHolder)
 
 Corner(Logo, 21)
@@ -327,25 +395,24 @@ Create("UIGradient", {
             0,
             Color3.fromRGB(39, 18, 65)
         ),
-
         ColorSequenceKeypoint.new(
             0.5,
             Color3.fromRGB(74, 25, 105)
         ),
-
         ColorSequenceKeypoint.new(
             1,
             Color3.fromRGB(25, 15, 36)
         )
     }),
-
     Rotation = 135
 }, Logo)
 
-local LogoStroke = Create("UIStroke", {
-    Thickness = 2,
-    Transparency = 0
-}, Logo)
+local LogoStroke = AddStroke(
+    Logo,
+    Color3.fromRGB(170, 70, 255),
+    2,
+    0
+)
 
 Create("UIGradient", {
     Color = ColorSequence.new({
@@ -353,29 +420,25 @@ Create("UIGradient", {
             0,
             Color3.fromRGB(115, 35, 255)
         ),
-
         ColorSequenceKeypoint.new(
             0.5,
             Color3.fromRGB(245, 100, 255)
         ),
-
         ColorSequenceKeypoint.new(
             1,
             Color3.fromRGB(145, 50, 255)
         )
     }),
-
     Rotation = 45
 }, LogoStroke)
-
---==================================================
--- HH
---==================================================
 
 local HH = Create("TextLabel", {
     Name = "HH",
 
-    Size = UDim2.fromScale(1, 1),
+    Size = UDim2.fromScale(
+        1,
+        1
+    ),
 
     BackgroundTransparency = 1,
 
@@ -384,12 +447,20 @@ local HH = Create("TextLabel", {
     Font = Enum.Font.GothamBlack,
     TextSize = 32,
 
-    TextColor3 = Color3.fromRGB(220, 150, 255),
+    TextColor3 = Color3.fromRGB(
+        220,
+        150,
+        255
+    ),
 
     TextStrokeTransparency = 0.55,
-    TextStrokeColor3 = Color3.fromRGB(130, 45, 255),
+    TextStrokeColor3 = Color3.fromRGB(
+        130,
+        45,
+        255
+    ),
 
-    ZIndex = 5
+    ZIndex = 15
 }, Logo)
 
 Create("UIGradient", {
@@ -398,39 +469,51 @@ Create("UIGradient", {
             0,
             Color3.fromRGB(135, 45, 255)
         ),
-
         ColorSequenceKeypoint.new(
             0.5,
             Color3.fromRGB(255, 145, 255)
         ),
-
         ColorSequenceKeypoint.new(
             1,
             Color3.fromRGB(150, 65, 255)
         )
     }),
-
     Rotation = 90
 }, HH)
 
 local Shine = Create("Frame", {
-    Size = UDim2.fromOffset(8, 8),
+    Size = UDim2.fromOffset(
+        8,
+        8
+    ),
 
-    Position = UDim2.fromOffset(11, 10),
+    Position = UDim2.fromOffset(
+        11,
+        10
+    ),
 
-    BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+    BackgroundColor3 = Color3.fromRGB(
+        255,
+        255,
+        255
+    ),
+
     BackgroundTransparency = 0.25,
 
     BorderSizePixel = 0,
+
     Rotation = 45,
 
-    ZIndex = 6
+    ZIndex = 16
 }, Logo)
 
 Corner(Shine, 99)
 
 local Shine2 = Create("Frame", {
-    Size = UDim2.fromOffset(4, 4),
+    Size = UDim2.fromOffset(
+        4,
+        4
+    ),
 
     Position = UDim2.new(
         1,
@@ -443,13 +526,13 @@ local Shine2 = Create("Frame", {
 
     BorderSizePixel = 0,
 
-    ZIndex = 6
+    ZIndex = 16
 }, Logo)
 
 Corner(Shine2, 99)
 
 --==================================================
--- HOAIHUB TEXT
+-- HOAIHUB TITLE
 --==================================================
 
 local LogoTitle = Create("TextLabel", {
@@ -466,7 +549,7 @@ local LogoTitle = Create("TextLabel", {
         0,
         0,
         0,
-        168
+        153
     ),
 
     BackgroundTransparency = 1,
@@ -480,7 +563,9 @@ local LogoTitle = Create("TextLabel", {
 
     TextStrokeTransparency = 0.8,
 
-    TextXAlignment = Enum.TextXAlignment.Center
+    TextXAlignment = Enum.TextXAlignment.Center,
+
+    ZIndex = 15
 }, Main)
 
 Create("UIGradient", {
@@ -489,12 +574,10 @@ Create("UIGradient", {
             0,
             Color3.fromRGB(125, 40, 255)
         ),
-
         ColorSequenceKeypoint.new(
             0.5,
             Color3.fromRGB(245, 110, 255)
         ),
-
         ColorSequenceKeypoint.new(
             1,
             Color3.fromRGB(145, 55, 255)
@@ -503,36 +586,193 @@ Create("UIGradient", {
 }, LogoTitle)
 
 --==================================================
--- DRAG
+-- MOBILE TOGGLE
+--==================================================
+
+local ToggleGui = Create("ScreenGui", {
+    Name = "HoaiHubToggle",
+
+    ResetOnSpawn = false,
+    IgnoreGuiInset = true,
+
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+}, CoreGui)
+
+local ToggleButton = Create("TextButton", {
+    Name = "ToggleButton",
+
+    Size = UDim2.fromOffset(
+        48,
+        48
+    ),
+
+    Position = UDim2.new(
+        1,
+        -62,
+        0.5,
+        -24
+    ),
+
+    BackgroundColor3 = Color3.fromRGB(
+        29,
+        17,
+        43
+    ),
+
+    BorderSizePixel = 0,
+
+    AutoButtonColor = false,
+
+    Text = "×",
+
+    Font = Enum.Font.GothamBlack,
+    TextSize = 18,
+
+    TextColor3 = Color3.fromRGB(
+        245,
+        220,
+        255
+    ),
+
+    ZIndex = 50
+}, ToggleGui)
+
+Corner(ToggleButton, 14)
+
+local ToggleStroke = AddStroke(
+    ToggleButton,
+    CONFIG.Purple,
+    1.5,
+    0.15
+)
+
+Create("UIGradient", {
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(
+            0,
+            CONFIG.Purple
+        ),
+        ColorSequenceKeypoint.new(
+            0.5,
+            CONFIG.Pink
+        ),
+        ColorSequenceKeypoint.new(
+            1,
+            CONFIG.Purple
+        )
+    }),
+    Rotation = 45
+}, ToggleStroke)
+
+--==================================================
+-- VISIBILITY
+--==================================================
+
+local MenuVisible = true
+local Animating = false
+
+local function SetMenuVisible(State)
+    if Animating or MenuVisible == State then
+        return
+    end
+
+    MenuVisible = State
+    Animating = true
+
+    if State then
+        Main.Visible = true
+
+        Main.Size = UDim2.fromOffset(
+            CONFIG.Width - 40,
+            CONFIG.Height - 40
+        )
+
+        local Animation = Tween(
+            Main,
+            0.32,
+            {
+                Size = UDim2.fromOffset(
+                    CONFIG.Width,
+                    CONFIG.Height
+                )
+            }
+        )
+
+        Animation.Completed:Connect(function()
+            Animating = false
+        end)
+
+        Animation:Play()
+
+        ToggleButton.Text = "×"
+    else
+        local Animation = Tween(
+            Main,
+            0.25,
+            {
+                Size = UDim2.fromOffset(
+                    0,
+                    0
+                )
+            }
+        )
+
+        Animation.Completed:Connect(function()
+            Main.Visible = false
+            Animating = false
+        end)
+
+        Animation:Play()
+
+        -- StatusBox is intentionally NOT touched.
+        -- It remains visible if the checker has shown it.
+
+        ToggleButton.Text = "HH"
+    end
+end
+
+ToggleButton.MouseButton1Click:Connect(function()
+    SetMenuVisible(not MenuVisible)
+end)
+
+UserInputService.InputBegan:Connect(function(Input, Processed)
+    if Processed then
+        return
+    end
+
+    if Input.KeyCode == CONFIG.ToggleKey then
+        SetMenuVisible(not MenuVisible)
+    end
+end)
+
+--==================================================
+-- DRAG MAIN
+--
+-- Status follows Main horizontally/vertically.
+-- It remains a separate UI object.
 --==================================================
 
 local Dragging = false
 local DragStart
-local StartPosition
+local StartMainPosition
 
 Main.InputBegan:Connect(function(Input)
-
     if Input.UserInputType == Enum.UserInputType.MouseButton1
         or Input.UserInputType == Enum.UserInputType.Touch then
 
         Dragging = true
         DragStart = Input.Position
-        StartPosition = Main.Position
+        StartMainPosition = Main.Position
 
         Input.Changed:Connect(function()
-
             if Input.UserInputState == Enum.UserInputState.End then
                 Dragging = false
             end
-
         end)
-
     end
-
 end)
 
 UserInputService.InputChanged:Connect(function(Input)
-
     if not Dragging then
         return
     end
@@ -543,74 +783,23 @@ UserInputService.InputChanged:Connect(function(Input)
         local Delta = Input.Position - DragStart
 
         Main.Position = UDim2.new(
-            StartPosition.X.Scale,
-            StartPosition.X.Offset + Delta.X,
+            StartMainPosition.X.Scale,
+            StartMainPosition.X.Offset + Delta.X,
 
-            StartPosition.Y.Scale,
-            StartPosition.Y.Offset + Delta.Y
+            StartMainPosition.Y.Scale,
+            StartMainPosition.Y.Offset + Delta.Y
         )
 
-    end
-
-end)
-
---==================================================
--- SHOW / HIDE
---==================================================
-
-local Visible = true
-
-UserInputService.InputBegan:Connect(function(Input, Processed)
-
-    if Processed then
-        return
-    end
-
-    if Input.KeyCode ~= CONFIG.ToggleKey then
-        return
-    end
-
-    Visible = not Visible
-
-    if Visible then
-
-        Main.Visible = true
-
-        Main.Size = UDim2.fromOffset(
-            CONFIG.Width - 40,
-            CONFIG.Height - 40
+        -- Keep external Status above Main.
+        StatusBox.Position = UDim2.new(
+            Main.Position.X.Scale,
+            Main.Position.X.Offset,
+            Main.Position.Y.Scale,
+            Main.Position.Y.Offset
+                - CONFIG.StatusGap
+                - CONFIG.StatusHeight
         )
-
-        Tween(Main, 0.35, {
-            Size = UDim2.fromOffset(
-                CONFIG.Width,
-                CONFIG.Height
-            )
-        }):Play()
-
-    else
-
-        -- QUAN TRỌNG:
-        -- Không reset StatusBox.Visible.
-        -- Status vẫn giữ nguyên state khi menu bị ẩn.
-
-        Tween(Main, 0.25, {
-            Size = UDim2.fromOffset(
-                0,
-                0
-            )
-        }):Play()
-
-        task.delay(0.25, function()
-
-            if not Visible then
-                Main.Visible = false
-            end
-
-        end)
-
     end
-
 end)
 
 --==================================================
@@ -620,23 +809,50 @@ end)
 _G.HoaiHub = {
 
     SetStatus = function(Text)
-
         Status.Text = tostring(Text)
-        StatusBox.Visible = true
 
+        -- Status is a separate object.
+        -- It appears automatically when checker reports status.
+        if not StatusBox.Visible then
+            StatusBox.Visible = true
+
+            StatusBox.Size = UDim2.fromOffset(
+                CONFIG.StatusWidth - 30,
+                CONFIG.StatusHeight - 8
+            )
+
+            Tween(
+                StatusBox,
+                0.22,
+                {
+                    Size = UDim2.fromOffset(
+                        CONFIG.StatusWidth,
+                        CONFIG.StatusHeight
+                    )
+                }
+            ):Play()
+        end
     end,
 
     HideStatus = function()
-
-        -- Chỉ khi gọi HideStatus mới ẩn Status.
         StatusBox.Visible = false
-
     end,
 
     GetUI = function()
         return Main
-    end
+    end,
 
+    GetStatusUI = function()
+        return StatusBox
+    end,
+
+    IsVisible = function()
+        return MenuVisible
+    end,
+
+    Toggle = function()
+        SetMenuVisible(not MenuVisible)
+    end
 }
 
 --==================================================
@@ -757,7 +973,6 @@ local SPECIAL_ITEMS = {
         "dragonheart",
         "dragon heart"
     }
-
 }
 
 --==================================================
@@ -829,12 +1044,7 @@ local function Normalize(Value)
     return Text:match(
         "^%s*(.-)%s*$"
     ) or ""
-
 end
-
---==================================================
--- ALIAS MATCH
---==================================================
 
 local function MatchAlias(Text, Aliases)
 
@@ -873,12 +1083,10 @@ local function SearchTable(
     local DataType = typeof(Data)
 
     if DataType == "string" then
-
         return MatchAlias(
             Data,
             Aliases
         )
-
     end
 
     if DataType ~= "table" then
@@ -893,41 +1101,34 @@ local function SearchTable(
 
     Visited[Data] = true
 
-    -- Keys
+    -- Check keys.
     for Key, Value in pairs(Data) do
 
-        if typeof(Key) == "string" then
-
-            if MatchAlias(
+        if typeof(Key) == "string"
+            and MatchAlias(
                 Key,
                 Aliases
-            ) then
+            )
+            and Value ~= false
+            and Value ~= 0 then
 
-                if Value ~= false
-                    and Value ~= 0 then
-
-                    return true
-                end
-
-            end
-
+            return true
         end
-
     end
 
-    -- Common fields + recursive
+    -- Check common name fields + nested tables.
     for Key, Value in pairs(Data) do
 
         if typeof(Key) == "string" then
 
-            local NormalizedKey = Normalize(Key)
+            local K = Normalize(Key)
 
-            if NormalizedKey == "name"
-                or NormalizedKey == "itemname"
-                or NormalizedKey == "displayname"
-                or NormalizedKey == "item"
-                or NormalizedKey == "title"
-                or NormalizedKey == "weapon" then
+            if K == "name"
+                or K == "itemname"
+                or K == "displayname"
+                or K == "item"
+                or K == "title"
+                or K == "weapon" then
 
                 if typeof(Value) == "string"
                     and MatchAlias(
@@ -937,9 +1138,7 @@ local function SearchTable(
 
                     return true
                 end
-
             end
-
         end
 
         if SearchTable(
@@ -951,18 +1150,18 @@ local function SearchTable(
 
             return true
         end
-
     end
 
     return false
 end
 
 --==================================================
--- FIND INVENTORY REMOTE
+-- FIND GETINVENTORY REMOTE
 --==================================================
 
 local function FindInventoryRemote()
 
+    -- Preferred: an actual RemoteFunction named GetInventory.
     local Remote = ReplicatedStorage:FindFirstChild(
         "GetInventory",
         true
@@ -974,6 +1173,7 @@ local function FindInventoryRemote()
         return Remote, "direct"
     end
 
+    -- Search under Remotes.
     local Remotes = ReplicatedStorage:FindFirstChild(
         "Remotes"
     )
@@ -990,9 +1190,9 @@ local function FindInventoryRemote()
 
             return Remote, "direct"
         end
-
     end
 
+    -- Blox Fruits-style fallback.
     Remote = ReplicatedStorage:FindFirstChild(
         "CommF_",
         true
@@ -1024,9 +1224,7 @@ local function GetInventory()
     if Mode == "direct" then
 
         local Success, Result = pcall(function()
-
             return Remote:InvokeServer()
-
         end)
 
         if Success
@@ -1035,12 +1233,11 @@ local function GetInventory()
             return Result, nil
         end
 
+        -- Some implementations expose a command.
         local Success2, Result2 = pcall(function()
-
             return Remote:InvokeServer(
                 "getInventory"
             )
-
         end)
 
         if Success2
@@ -1077,7 +1274,7 @@ local function GetInventory()
 end
 
 --==================================================
--- RESET
+-- RESET RESULTS
 --==================================================
 
 local function ResetResults()
@@ -1093,7 +1290,7 @@ local function ResetResults()
 end
 
 --==================================================
--- SCAN
+-- SCAN INVENTORY
 --==================================================
 
 local function ScanInventory()
@@ -1110,7 +1307,6 @@ local function ScanInventory()
     if not Inventory then
 
         Progress.Ready = false
-
         Progress.Error =
             ErrorMessage
             or "Inventory unavailable"
@@ -1122,7 +1318,7 @@ local function ScanInventory()
 
     ResetResults()
 
-    -- 8 BELTS
+    -- 8 belts.
     for _, Belt in ipairs(BELTS) do
 
         local Owned = SearchTable(
@@ -1138,10 +1334,9 @@ local function ScanInventory()
             Progress.DojoCount += 1
             Progress.TotalOwned += 1
         end
-
     end
 
-    -- DRAGONSTORM
+    -- Dragonstorm.
     Progress.Dragonstorm = SearchTable(
         Inventory,
         SPECIAL_ITEMS.Dragonstorm,
@@ -1153,7 +1348,7 @@ local function ScanInventory()
         Progress.TotalOwned += 1
     end
 
-    -- DRAGONHEART
+    -- Dragonheart.
     Progress.Dragonheart = SearchTable(
         Inventory,
         SPECIAL_ITEMS.Dragonheart,
@@ -1298,25 +1493,25 @@ _G.HoaiHubChecker = {
             Progress.DojoCount == 8
             and Progress.Dragonstorm == true
             and Progress.Dragonheart == true
-
     end
 }
 
 --==================================================
--- SHOW STATUS MANUALLY
+-- MANUAL STATUS FUNCTIONS
 --==================================================
 
 function _G.HoaiHub.ShowCheckStatus()
-
     _G.HoaiHub.SetStatus(
         GetCheckStatus()
     )
-
 end
 
 --==================================================
--- AUTO INVENTORY SCAN
--- EVERY 1 SECOND
+-- CHECK LOOP
+--
+-- THIS IS THE IMPORTANT PART:
+-- Scan every 1 second, then automatically update
+-- the EXTERNAL Status panel.
 --==================================================
 
 task.spawn(function()
@@ -1324,16 +1519,33 @@ task.spawn(function()
     while ScreenGui
         and ScreenGui.Parent do
 
-        pcall(function()
+        local Success = pcall(function()
+
             ScanInventory()
+
+            -- Automatically show/update Status
+            -- after every scan.
+            _G.HoaiHub.SetStatus(
+                GetCheckStatus()
+            )
+
         end)
+
+        if not Success then
+
+            pcall(function()
+
+                _G.HoaiHub.SetStatus(
+                    "Checker error - retrying..."
+                )
+
+            end)
+        end
 
         task.wait(
             CONFIG.CheckInterval
         )
-
     end
-
 end)
 
 --==================================================
@@ -1350,6 +1562,7 @@ task.spawn(function()
         game.Loaded:Wait()
     end
 
+    -- Already has a team.
     if Player.Team then
 
         print(
@@ -1402,7 +1615,6 @@ task.spawn(function()
                 "SetTeam",
                 "Marines"
             )
-
         end)
 
         if Success then
@@ -1418,13 +1630,11 @@ task.spawn(function()
                 "HOAIHUB: SetTeam failed:",
                 Result
             )
-
         end
 
         task.wait(
             CONFIG.MarineRetryInterval
         )
-
     end
 
     if Player.Team then
@@ -1439,9 +1649,7 @@ task.spawn(function()
         warn(
             "HOAIHUB: Marine selection failed"
         )
-
     end
-
 end)
 
 --==================================================
@@ -1453,23 +1661,26 @@ Main.Size = UDim2.fromOffset(
     0
 )
 
-Tween(Main, 0.5, {
-
-    Size = UDim2.fromOffset(
-        CONFIG.Width,
-        CONFIG.Height
-    )
-
-}):Play()
+Tween(
+    Main,
+    0.5,
+    {
+        Size = UDim2.fromOffset(
+            CONFIG.Width,
+            CONFIG.Height
+        )
+    }
+):Play()
 
 --==================================================
--- DEFAULT
+-- INITIAL STATUS
+-- Hidden until the first checker result.
 --==================================================
 
 StatusBox.Visible = false
 
 --==================================================
--- RAINBOW HH
+-- RAINBOW LOGO
 --==================================================
 
 local Hue = 0
@@ -1483,7 +1694,6 @@ RunService.RenderStepped:Connect(function()
         0.65,
         1
     )
-
 end)
 
 --==================================================
@@ -1492,84 +1702,91 @@ end)
 
 task.spawn(function()
 
-    while ScreenGui.Parent do
+    while ScreenGui
+        and ScreenGui.Parent do
 
-        Tween(Glow, 1.2, {
+        Tween(
+            Glow,
+            1.2,
+            {
+                Size = UDim2.fromOffset(
+                    100,
+                    100
+                ),
 
-            Size = UDim2.fromOffset(
-                100,
-                100
-            ),
+                Position = UDim2.new(
+                    0.5,
+                    -50,
+                    0.5,
+                    -50
+                ),
 
-            Position = UDim2.new(
-                0.5,
-                -50,
-                0.5,
-                -50
-            ),
+                BackgroundTransparency = 0.92
+            }
+        ):Play()
 
-            BackgroundTransparency = 0.92
+        Tween(
+            Glow2,
+            1.2,
+            {
+                Size = UDim2.fromOffset(
+                    90,
+                    90
+                ),
 
-        }):Play()
+                Position = UDim2.new(
+                    0.5,
+                    -45,
+                    0.5,
+                    -45
+                ),
 
-        Tween(Glow2, 1.2, {
-
-            Size = UDim2.fromOffset(
-                90,
-                90
-            ),
-
-            Position = UDim2.new(
-                0.5,
-                -45,
-                0.5,
-                -45
-            ),
-
-            BackgroundTransparency = 0.95
-
-        }):Play()
-
-        task.wait(1.2)
-
-        Tween(Glow, 1.2, {
-
-            Size = UDim2.fromOffset(
-                92,
-                92
-            ),
-
-            Position = UDim2.new(
-                0.5,
-                -46,
-                0.5,
-                -46
-            ),
-
-            BackgroundTransparency = 0.86
-
-        }):Play()
-
-        Tween(Glow2, 1.2, {
-
-            Size = UDim2.fromOffset(
-                82,
-                82
-            ),
-
-            Position = UDim2.new(
-                0.5,
-                -41,
-                0.5,
-                -41
-            ),
-
-            BackgroundTransparency = 0.90
-
-        }):Play()
+                BackgroundTransparency = 0.95
+            }
+        ):Play()
 
         task.wait(1.2)
 
+        Tween(
+            Glow,
+            1.2,
+            {
+                Size = UDim2.fromOffset(
+                    92,
+                    92
+                ),
+
+                Position = UDim2.new(
+                    0.5,
+                    -46,
+                    0.5,
+                    -46
+                ),
+
+                BackgroundTransparency = 0.86
+            }
+        ):Play()
+
+        Tween(
+            Glow2,
+            1.2,
+            {
+                Size = UDim2.fromOffset(
+                    82,
+                    82
+                ),
+
+                Position = UDim2.new(
+                    0.5,
+                    -41,
+                    0.5,
+                    -41
+                ),
+
+                BackgroundTransparency = 0.90
+            }
+        ):Play()
+
+        task.wait(1.2)
     end
-
 end)
